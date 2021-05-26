@@ -196,3 +196,73 @@ class URDFRobot():
             clear_output(wait=True)
             self.set_q(x)
             time.sleep(self.dt)
+
+
+class URDFRobot_spacetime():
+    def __init__(self, dof, robot_id, joint_indices=None, dt=0.01):
+        self.dt = dt
+        self.Dx = dof * 2
+        self.Du = dof
+        self.dof = dof
+        self.robot_id = robot_id
+        if joint_indices is None:
+            self.joint_indices = np.arange(dof)
+        else:
+            self.joint_indices = joint_indices
+
+    def set_init_state(self, x0):
+        self.x0 = x0
+        self.set_q(x0)
+
+    def compute_matrices(self, x, u):
+        # compute the derivatives of the dynamics
+        A = np.eye(self.Dx)
+        B = np.zeros((self.Dx, self.Du))
+
+        A[:self.dof, self.dof:] = np.eye(self.dof) * self.dt
+
+        # B[self.dof:,:] = np.eye(self.Du)
+        B[:self.dof, :] = np.eye(self.Du) * self.dt * self.dt / 2
+        B[-self.dof:, :] = np.eye(self.Du) * self.dt
+
+        self.A, self.B = A, B
+        return A, B
+
+    def compute_ee(self, x, ee_id):
+        self.set_q(x)
+        ee_data = p.getLinkState(self.robot_id, ee_id)
+        pos = np.array(ee_data[0])
+        quat = np.array(ee_data[1])
+        return pos, quat
+
+    def compute_Jacobian(self, x, ee_id):
+        zeros = [0.] * self.dof
+        Jl, Ja = p.calculateJacobian(self.robot_id, ee_id, [0., 0., 0.], x[:self.dof].tolist(), zeros, zeros)
+        Jl, Ja = np.array(Jl), np.array(Ja)
+        self.J = np.concatenate([Jl, Ja], axis=0)
+        return self.J
+
+    def step(self, x, u):
+        x_next = self.A.dot(x) + self.B.dot(u)
+        return x_next
+
+    def rollout(self, us):
+        x_cur = self.x0.copy()
+        xs = [x_cur]
+        T = len(us)
+        for i in range(T):
+            x_cur = self.step(x_cur, us[i])
+            xs += [x_cur]
+        return np.array(xs)
+
+    def set_q(self, x):
+        q = x[:self.dof]
+        for i in range(self.dof):
+            p.resetJointState(self.robot_id, self.joint_indices[i], q[i])
+        return
+
+    def vis_traj(self, xs, dt=0.1):
+        for x in xs:
+            clear_output(wait=True)
+            self.set_q(x)
+            time.sleep(self.dt)
