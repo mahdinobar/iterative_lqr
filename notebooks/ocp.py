@@ -60,7 +60,7 @@ class ILQR():
             self.Lu[i]  = self.costs[i].Lu
             self.Luu[i] = self.costs[i].Luu
             #dynamic derivatives
-            self.Fx[i], self.Fu[i] = self.sys.compute_matrices(self.xs[i], self.us[i])
+            self.Fx[i], self.Fu[i] = self.sys.compute_matrices(self.us[i])
             
     def calc_cost(self, xs, us):
         self.cost = np.sum([self.costs[i].calc(xs[i], us[i]) for i in range(self.T+1)])
@@ -74,7 +74,7 @@ class ILQR():
         cost = 5*np.abs(cost0)
         
         n_iter = 0
-        while cost > cost0 and n_iter < max_iter  :
+        while cost > cost0 and n_iter < max_iter:
             if method == 'recursive':
                 xs_new = []
                 us_new = []

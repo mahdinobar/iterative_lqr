@@ -18,8 +18,8 @@ np.set_printoptions(precision=4, suppress=True)
 
 # #### Setup pybullet with the urdf
 # configure pybullet and load plane.urdf and quadcopter.urdf
-physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
-# physicsClient = p.connect(p.GUI)  # pybullet with visualisation
+# physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
+physicsClient = p.connect(p.GUI)  # pybullet with visualisation
 p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.resetSimulation()
@@ -77,6 +77,12 @@ Qfactor_q1=1e0
 Qfactor_q2=1e0
 Q = np.diag(np.concatenate((Qfactor_q1*np.ones(7),Qfactor_q2*np.ones(7),[0, 0])))
 
+model_Q_obs_x=1e0
+model_Q_obs_s=1e0
+Qobs=np.diag(np.concatenate((model_Q_obs_x*np.ones(3),[model_Q_obs_s])))
+qobs=1e-1
+obs_thresh=10
+
 WTfactor_p1=1e0
 WTfactor_p2=1e0
 W = np.zeros((6,6))
@@ -111,12 +117,14 @@ for i in range(T):
     runningStateCost = CostModelQuadratic(sys, Q=Q, x_ref=x_ref)
     runningControlCost = CostModelQuadratic(sys, R=R, u_ref=u_ref)
     runningEECost = CostModelQuadraticTranslation_dual(sys, W=W, ee_id=link_id, p_target_1=p_target_1, p_target_2=p_target_2)
-    runningCost = CostModelSum(sys, [runningStateCost, runningControlCost, runningEECost])
+    obstAvoidCost = CostModelObstacle_exp4(sys, ee_id=link_id, qobs=qobs, Qobs=Qobs, th=obs_thresh)
+    runningCost = CostModelSum(sys, [runningStateCost, runningControlCost, runningEECost, obstAvoidCost])
     costs += [runningCost]
 terminalStateCost = CostModelQuadratic(sys, Q=Qf)
 terminalControlCost = CostModelQuadratic(sys, R=R)
 terminalEECost = CostModelQuadraticTranslation_dual(sys, W=WT, ee_id=link_id, p_target_1=p_target_1, p_target_2=p_target_2)
-terminalCost = CostModelSum(sys, [terminalStateCost, terminalControlCost, terminalEECost])
+obstAvoidCost = CostModelObstacle_exp4(sys, ee_id=link_id, qobs=qobs, Qobs=Qobs, th=obs_thresh)
+terminalCost = CostModelSum(sys, [terminalStateCost, terminalControlCost, terminalEECost, obstAvoidCost])
 costs += [terminalCost]
 
 # #### Construct ILQR
@@ -126,7 +134,7 @@ ilqr_cost.set_timestep(T)
 ilqr_cost.set_cost(costs)
 ilqr_cost.set_state(xs, us)  # set initial trajectory
 
-ilqr_cost.mu = 1e-6
+ilqr_cost.mu = 1e-5
 
 # #### Solve and Plot
 n_iter = 30
