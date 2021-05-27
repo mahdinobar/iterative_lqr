@@ -74,7 +74,9 @@ class ILQR():
         cost = 5*np.abs(cost0)
         
         n_iter = 0
-        while cost > cost0 and n_iter < max_iter:
+
+        # while cost > cost0 and n_iter < max_iter:
+        while cost > cost0 and alpha > self.threshold_alpha:
             if method == 'recursive':
                 xs_new = []
                 us_new = []
@@ -168,7 +170,8 @@ class ILQR():
             self.del_us_ls = -np.linalg.solve(self.Sigma_u_inv, self.Su.T.dot(self.Qs.dot(self.Sx.dot(-np.zeros(self.Dx)))) + self.Lxs.dot(self.Su) + self.Lus )
             self.del_xs_ls = self.Sx.dot(np.zeros(self.Dx)) + self.Su.dot(self.del_us_ls)
 
-    def solve(self, n_iter = 3, method = 'batch', verbose = False, cost_thres = 1e-5):
+    def solve(self, n_iter = 3, method = 'batch', verbose = False, cost_thres = 1e-5, threshold_alpha=1e-5):
+        self.threshold_alpha=threshold_alpha
         for i in range(n_iter):
             self.calc_diff()
             self.backward_pass(method=method)
@@ -176,9 +179,10 @@ class ILQR():
             dcost = self.forward_pass(method=method)
             if verbose is False:
                 clear_output(wait=True)
-            if dcost < cost_thres:
-                print('Cost converges at iteration {}, cannot decrease further'.format(i))
-                return self.xs, self.us
+            # todo uncomment ?
+            # if dcost < cost_thres:
+            #     print('Cost converges at iteration {}, cannot decrease further'.format(i))
+            #     return self.xs, self.us
             # except Exception as error:
             #     print('Ending the iteration..\n' + repr(error))
             #     break

@@ -26,8 +26,10 @@ p.resetSimulation()
 p.loadURDF('plane.urdf')
 
 robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
+p_target_1 = np.array([.7,.5,.5])
+p_target_2 = np.array([.7,0.,.5])
 robot1_id = p.loadURDF(robot_urdf, basePosition=[0.,0.,0.], useFixedBase=1)
-robot2_id = p.loadURDF(robot_urdf, basePosition=[0.,2.,0.], useFixedBase=1)
+robot2_id = p.loadURDF(robot_urdf, basePosition=[0.,.7,0.], useFixedBase=1)
 joint_limits = get_joint_limits(robot1_id, 7)
 
 # Define the end-effector
@@ -94,9 +96,6 @@ R = np.eye(sys.Du) * 1e-6
 mu = 1e-6  # regularization coefficient
 # #### Set end effector target
 # W and WT: cost coefficients for the end-effector reaching task
-p_target_1 = np.array([1.,2.,1.])
-p_target_2 = np.array([1.,0.,1.])
-
 
 p.resetBasePositionAndOrientation(ballId1, p_target_1, (0, 0, 0, 1))
 p.resetBasePositionAndOrientation(ballId2, p_target_2, (0, 0, 0, 1))
@@ -137,9 +136,8 @@ ilqr_cost.set_state(xs, us)  # set initial trajectory
 ilqr_cost.mu = 1e-5
 
 # #### Solve and Plot
-n_iter = 30
-cost_thres=1e-10
-ilqr_cost.solve(n_iter, method='batch', cost_thres=cost_thres)
+n_iter = 10
+ilqr_cost.solve(n_iter, method='batch', threshold_alpha=1e-5)
 xs_batch, us_batch = ilqr_cost.xs, ilqr_cost.us
 # clear_output()
 

@@ -248,7 +248,9 @@ class CostModelSum():
         self.Lxu = np.zeros((self.Dx,self.Du))
         for i,cost in enumerate(self.costs):
             cost.calcDiff(x, u)
-            self.Lx += cost.Lx
+            print('type(cost).__name__=',type(cost).__name__)
+            print('np.shape(cost.Lx)=',np.shape(cost.Lx))
+            self.Lx += np.squeeze(cost.Lx)
             self.Lu += cost.Lu
             self.Lxx += cost.Lxx
             self.Luu += cost.Luu
