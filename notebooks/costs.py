@@ -162,7 +162,7 @@ class CostModelQuadraticTranslation_dual():
             # self.p_target_2 = p_target_world_2
             pass
 
-    def calc(self, x):
+    def calc(self, x, u):
         p1, _, p2, _ = self.sys.compute_ee(x, self.ee_id)
         self.L = 0.5 * (np.append(p1,p2) - np.append(self.p_target_1,self.p_target_2)).T.dot(self.W).dot(np.append(p1,p2) - np.append(self.p_target_1,self.p_target_2))
         return self.L
@@ -314,7 +314,7 @@ class CostModelObstacle_exp4():
         self.ee_id = ee_id
         self.Qobs, self.qobs, self.th = Qobs, qobs, th
 
-    def calc(self, x):
+    def calc(self, x, u):
         p1, _, p2, _ = self.sys.compute_ee(x, self.ee_id)
         e= np.append(p1,x[14])-np.append(p2,x[15])
         d=0.5*e.T.dot(self.Qobs).dot(e)
@@ -343,8 +343,8 @@ class CostModelObstacle_exp4():
         else:
             fobs=0
             Jobs=np.zeros((1,self.Dx))
-        self.Lx = (2*self.qobs/(1-np.exp(-self.th))**2).dot(Jobs.T).dot(fobs)
-        self.Lu = np.zeros((self.Du,1))
-        self.Lxx = (2*self.qobs/(1-np.exp(-self.th))**2).dot(Jobs.T).dot(Jobs)
+        self.Lx = (2*self.qobs/(1-np.exp(-self.th))**2)*Jobs.T.dot(fobs)
+        self.Lu = np.zeros((self.Du))
+        self.Lxx = (2*self.qobs/(1-np.exp(-self.th))**2)*Jobs.T.dot(Jobs)
         self.Luu = np.zeros((self.Du,self.Du))
         self.Lxu = np.zeros((self.Dx, self.Du))

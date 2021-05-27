@@ -138,7 +138,8 @@ ilqr_cost.mu = 1e-5
 
 # #### Solve and Plot
 n_iter = 30
-ilqr_cost.solve(n_iter, method='batch')
+cost_thres=1e-10
+ilqr_cost.solve(n_iter, method='batch', cost_thres=cost_thres)
 xs_batch, us_batch = ilqr_cost.xs, ilqr_cost.us
 # clear_output()
 

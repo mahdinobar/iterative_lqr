@@ -172,16 +172,16 @@ class ILQR():
         for i in range(n_iter):
             self.calc_diff()
             self.backward_pass(method=method)
-            try:
-                dcost = self.forward_pass(method=method)
-                if verbose is False:
-                    clear_output(wait=True)
-                if dcost < cost_thres:
-                    print('Cost converges at iteration {}, cannot decrease further'.format(i))
-                    return self.xs, self.us
-            except Exception as error:
-                print('Ending the iteration..\n' + repr(error))
-                break
+            # try:
+            dcost = self.forward_pass(method=method)
+            if verbose is False:
+                clear_output(wait=True)
+            if dcost < cost_thres:
+                print('Cost converges at iteration {}, cannot decrease further'.format(i))
+                return self.xs, self.us
+            # except Exception as error:
+            #     print('Ending the iteration..\n' + repr(error))
+            #     break
         
         print('Reach maximum ILQR iteration')
         return self.xs, self.us
