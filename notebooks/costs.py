@@ -4,6 +4,7 @@ from numpy import dot
 from numpy.linalg import inv
 from scipy.spatial.transform import Rotation
 from ocp_utils import quat2Mat
+from scipy.linalg import block_diag
 
 class CostModelQuadratic():
     def __init__(self, sys, Q = None, R = None, x_ref = None, u_ref = None):
@@ -125,7 +126,61 @@ class CostModelQuadraticOrientation():
         self.Lxx[:self.Dx//2,:self.Dx//2] = self.J.T @ self.W @ self.J
         self.Lxu = np.zeros((self.Dx, self.Du))
         self.Luu  = np.zeros((self.Du, self.Du))
-        
+
+
+class CostModelQuadraticTranslation_dual():
+    '''
+    The quadratic cost model for the end effector, p = f(x)
+    '''
+
+    def __init__(self, sys, W, ee_id, p_target_1, p_target_2, p_ref=None, R_ref=None):
+        self.sys = sys
+        self.Dx, self.Du = sys.Dx, sys.Du
+        self.W = W
+        self.ee_id = ee_id
+
+        self.p_ref = p_ref  # origin of the reference frame w.r.t. the world
+        if p_ref is None: self.p_ref = np.zeros(3)
+
+        self.R_ref = R_ref  # orientation of the reference frame w.r.t. the world
+        if R_ref is not None:
+            self.W = self.R_ref.dot(self.W).dot(self.R_ref.T)  # transform the cost coefficient to the object frame
+
+        self.set_target(p_target_1, p_target_2)
+
+    def set_target(self, p_target_1, p_target_2):
+        self.p_target_1 = p_target_1
+        self.p_target_2 = p_target_2
+
+        # todo ?
+        if self.R_ref is not None:
+            # p_target is defined in the object coordinate system
+            # Transform p_target to the world coordinate system for easier computation
+            # p_target_world_1 = self.R_ref.dot(p_target_1) + self.p_ref
+            # self.p_target_1 = p_target_world_1
+            # p_target_world_2 = self.R_ref.dot(p_target_2) + self.p_ref
+            # self.p_target_2 = p_target_world_2
+            pass
+
+    def calc(self, x):
+        p1, _, p2, _ = self.sys.compute_ee(x, self.ee_id)
+        self.L = 0.5 * (np.append(p1,p2) - np.append(self.p_target_1,self.p_target_2)).T.dot(self.W).dot(np.append(p1,p2) - np.append(self.p_target_1,self.p_target_2))
+        return self.L
+
+    def calcDiff(self, x, u):
+        p1, _, p2, _ = self.sys.compute_ee(x, self.ee_id)
+        J1, J2 = self.sys.compute_Jacobian(x, self.ee_id)
+        # only use translation jacobian
+        J1=J1[:3]
+        J2=J2[:3]
+        # compute JEER
+        self.J=np.hstack((block_diag(J1,J2),np.zeros((6,2))))
+        self.Lx = self.J.T.dot(self.W).dot(np.append(p1,p2) - np.append(self.p_target_1,self.p_target_2))
+        self.Lu = np.zeros(self.Du)
+        self.Lxx = self.J.T.dot(self.W).dot(self.J)
+        self.Lxu = np.zeros((self.Dx, self.Du))
+        self.Luu = np.zeros((self.Du, self.Du))
+
 
 class CostModelQuadraticTranslation():
     '''
@@ -250,4 +305,46 @@ class CostModelCollisionEllipsoid():
         self.Lu  = np.zeros(self.Du)
         self.Lxu = np.zeros((self.Dx, self.Du))
         self.Luu  = np.zeros((self.Du, self.Du))
-     
+
+
+class CostModelObstacle_exp4():
+    def __init__(self, sys, ee_id, qobs, Qobs, th):
+        self.sys = sys
+        self.Dx, self.Du = sys.Dx, sys.Du
+        self.ee_id = ee_id
+        self.Qobs, self.qobs, self.th = Qobs, qobs, th
+
+    def calc(self, x):
+        p1, _, p2, _ = self.sys.compute_ee(x, self.ee_id)
+        e= np.append(p1,x[14])-np.append(p2,x[15])
+        d=0.5*e.T.dot(self.Qobs).dot(e)
+        if d<self.th:
+            fobs=np.exp(-d)-np.exp(-self.th)
+        else:
+            fobs=0
+        self.L = self.qobs/(1-np.exp(-self.th))**2*fobs**2
+        return self.L
+
+    def calcDiff(self, x, u):
+        # todo can remove bellow?
+        p1, _, p2, _ = self.sys.compute_ee(x, self.ee_id)
+        e= np.append(p1,x[14])-np.append(p2,x[15])
+        d=0.5*e.T.dot(self.Qobs).dot(e)
+        if d<self.th:
+            fobs=np.exp(-d)-np.exp(-self.th)
+            J1, J2 = self.sys.compute_Jacobian(x, self.ee_id)
+            # only use translation jacobian
+            J1 = J1[:3]
+            J2 = J2[:3]
+            de_dx = np.hstack(
+                (np.vstack((J1, np.zeros(7))), np.vstack((-J2, np.zeros(7))), np.vstack((np.zeros((3, 2)), [1, -1]))))
+            dd_dx = de_dx.T.dot(self.Qobs).dot(e)
+            Jobs=dd_dx.T.dot(fobs + np.exp(-self.th))
+        else:
+            fobs=0
+            Jobs=np.zeros((1,self.Dx))
+        self.Lx = (2*self.qobs/(1-np.exp(-self.th))**2).dot(Jobs.T).dot(fobs)
+        self.Lu = np.zeros((self.Du,1))
+        self.Lxx = (2*self.qobs/(1-np.exp(-self.th))**2).dot(Jobs.T).dot(Jobs)
+        self.Luu = np.zeros((self.Du,self.Du))
+        self.Lxu = np.zeros((self.Dx, self.Du))

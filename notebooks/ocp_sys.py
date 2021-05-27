@@ -198,13 +198,18 @@ class URDFRobot():
             time.sleep(self.dt)
 
 
-class URDFRobot_spacetime():
-    def __init__(self, dof, robot_id, joint_indices=None, dt=0.01):
+class URDFRobot_spacetime_dual():
+    '''
+    two same Panda arms spacetime framework with single integrator control
+    '''
+    def __init__(self, dof, robot1_id, robot2_id, joint_indices=None, dt=0.01):
         self.dt = dt
-        self.Dx = dof * 2
-        self.Du = dof
+        self.Dx = dof * 2 + 2  # x=(q11,q12,...,q17,q21,q22,...,q27,s1,s2)
+        self.Du = dof * 2 + 2  # u=(dq11,dq12,...,dq17,dq21,dq22,...,dq27,ds1,ds2)
         self.dof = dof
-        self.robot_id = robot_id
+        self.robot1_id = robot1_id
+        self.robot2_id = robot2_id
+        # todo
         if joint_indices is None:
             self.joint_indices = np.arange(dof)
         else:
@@ -214,36 +219,41 @@ class URDFRobot_spacetime():
         self.x0 = x0
         self.set_q(x0)
 
-    def compute_matrices(self, x, u):
-        # compute the derivatives of the dynamics
+    def compute_matrices(self, u):
+        # linearize system
         A = np.eye(self.Dx)
-        B = np.zeros((self.Dx, self.Du))
-
-        A[:self.dof, self.dof:] = np.eye(self.dof) * self.dt
-
-        # B[self.dof:,:] = np.eye(self.Du)
-        B[:self.dof, :] = np.eye(self.Du) * self.dt * self.dt / 2
-        B[-self.dof:, :] = np.eye(self.Du) * self.dt
-
+        B = np.diag(np.concatenate((u[14]*np.ones(self.dof),u[15]*np.ones(self.dof),[1,1])))
+        B[:self.dof, 14] = u[:self.dof]
+        B[self.dof:self.dof*2, 15] = u[self.dof:self.dof*2]
         self.A, self.B = A, B
         return A, B
 
     def compute_ee(self, x, ee_id):
         self.set_q(x)
-        ee_data = p.getLinkState(self.robot_id, ee_id)
-        pos = np.array(ee_data[0])
-        quat = np.array(ee_data[1])
-        return pos, quat
+        ee1_data = p.getLinkState(self.robot1_id, ee_id)
+        ee2_data = p.getLinkState(self.robot2_id, ee_id)
+        pos1 = np.array(ee1_data[0])
+        quat1 = np.array(ee1_data[1])
+        pos2 = np.array(ee2_data[0])
+        quat2 = np.array(ee2_data[1])
+        return pos1, quat1, pos2, quat2
 
     def compute_Jacobian(self, x, ee_id):
         zeros = [0.] * self.dof
-        Jl, Ja = p.calculateJacobian(self.robot_id, ee_id, [0., 0., 0.], x[:self.dof].tolist(), zeros, zeros)
-        Jl, Ja = np.array(Jl), np.array(Ja)
-        self.J = np.concatenate([Jl, Ja], axis=0)
-        return self.J
+        # todo give nonzero joint velocities?
+        Jl1, Ja1 = p.calculateJacobian(self.robot1_id, ee_id, [0., 0., 0.], x[:self.dof].tolist(), zeros, zeros)
+        Jl1, Ja1 = np.array(Jl1), np.array(Ja1)
+        self.J1 = np.concatenate([Jl1, Ja1], axis=0)
+        # todo give nonzero joint velocities?
+        Jl2, Ja2 = p.calculateJacobian(self.robot2_id, ee_id, [0., 0., 0.], x[self.dof:self.dof*2].tolist(), zeros, zeros)
+        Jl2, Ja2 = np.array(Jl2), np.array(Ja2)
+        self.J2 = np.concatenate([Jl2, Ja2], axis=0)
+        return self.J1, self.J2
 
     def step(self, x, u):
-        x_next = self.A.dot(x) + self.B.dot(u)
+        # todo replace with linearized system ?
+        B = np.diag(np.concatenate((u[14]*np.ones(self.dof),u[15]*np.ones(self.dof),[1,1])))
+        x_next = x + B.dot(u)
         return x_next
 
     def rollout(self, us):
@@ -256,9 +266,11 @@ class URDFRobot_spacetime():
         return np.array(xs)
 
     def set_q(self, x):
-        q = x[:self.dof]
+        q1 = x[:self.dof]
+        q2 = x[self.dof:self.dof*2]
         for i in range(self.dof):
-            p.resetJointState(self.robot_id, self.joint_indices[i], q[i])
+            p.resetJointState(self.robot1_id, self.joint_indices[i], q1[i])
+            p.resetJointState(self.robot2_id, self.joint_indices[i], q2[i])
         return
 
     def vis_traj(self, xs, dt=0.1):
