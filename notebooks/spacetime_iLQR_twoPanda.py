@@ -19,17 +19,18 @@ np.set_printoptions(precision=4, suppress=True)
 # #### Setup pybullet with the urdf
 # configure pybullet and load plane.urdf and quadcopter.urdf
 # physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
-physicsClient = p.connect(p.GUI)  # pybullet with visualisation
+physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/test.mp4\" --mp4fps=10")  # pybullet with visualisation
+p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-45, cameraTargetPosition=[0,0.6,0])
 p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.resetSimulation()
 p.loadURDF('plane.urdf')
 
 robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
-robot1_id = p.loadURDF(robot_urdf, basePosition=[0.,0.,0.], useFixedBase=1)
-robot2_id = p.loadURDF(robot_urdf, basePosition=[0.,.7,0.], useFixedBase=1)
-p_target_1 = np.array([.7,.0,.5])
-p_target_2 = np.array([.7,0.7,.5])
+robot1_id = p.loadURDF(robot_urdf, basePosition=[0., 0.0, 0.], useFixedBase=1)
+robot2_id = p.loadURDF(robot_urdf, basePosition=[0., 0.7, 0.], useFixedBase=1)
+p_target_1 = np.array([.7, 0.7, .5])
+p_target_2 = np.array([.7, 0.0, .5])
 joint_limits = get_joint_limits(robot1_id, 7)
 
 # Define the end-effector
@@ -46,8 +47,8 @@ for i in range(p.getNumJoints(robot1_id)):
     print(i, p.getJointInfo(robot2_id, i)[1])
 
 # Construct the robot system
-n_iter = 20
-dt = 0.1
+n_iter = 5
+dt = 0.5
 T = 10 # number of data points
 dof = 7
 sys = URDFRobot_spacetime_dual(dof=dof, robot1_id=robot1_id, robot2_id=robot2_id, dt=dt)
@@ -153,5 +154,5 @@ xs_batch, us_batch = ilqr_cost.xs, ilqr_cost.us
 sys.vis_traj(ilqr_cost.xs, vis_dt=0.1)
 
 # # #### Compute Error
-# pos1, _, pos2, _ = sys.compute_ee(ilqr_cost.xs[-1], link_id)
-
+pos1, _, pos2, _ = sys.compute_ee(ilqr_cost.xs[-1], link_id)
+print('pos1-p_target_1={}, pos2-p_target_2={}'.format(pos1-p_target_1, pos2-p_target_2))
