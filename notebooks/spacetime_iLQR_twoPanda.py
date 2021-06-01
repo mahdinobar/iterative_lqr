@@ -20,7 +20,7 @@ np.set_printoptions(precision=4, suppress=True)
 # configure pybullet and load plane.urdf and quadcopter.urdf
 # physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
 physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/test.mp4\" --mp4fps=10")  # pybullet with visualisation
-p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-45, cameraTargetPosition=[0,0.6,0])
+p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-80, cameraTargetPosition=[0,0.5,0])
 p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.resetSimulation()
@@ -29,8 +29,8 @@ p.loadURDF('plane.urdf')
 robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 robot1_id = p.loadURDF(robot_urdf, basePosition=[0., 0.0, 0.], useFixedBase=1)
 robot2_id = p.loadURDF(robot_urdf, basePosition=[0., 0.7, 0.], useFixedBase=1)
-p_target_1 = np.array([.7, 0.7, .5])
-p_target_2 = np.array([.7, 0.0, .5])
+p_target_1 = np.array([.5, 0.7, .5])
+p_target_2 = np.array([.5, 0.0, .5])
 joint_limits = get_joint_limits(robot1_id, 7)
 
 # Define the end-effector
@@ -47,32 +47,34 @@ for i in range(p.getNumJoints(robot1_id)):
     print(i, p.getJointInfo(robot2_id, i)[1])
 
 # Construct the robot system
-n_iter = 5
+n_iter = 20
+T = 20 # number of data points
 dt = 0.5
-T = 10 # number of data points
 dof = 7
 sys = URDFRobot_spacetime_dual(dof=dof, robot1_id=robot1_id, robot2_id=robot2_id, dt=dt)
 
 # Set the initial state
-# q0 = np.random.rand(7)
 q0_1 = np.array([0., 0., 0., 0., 0., 0., 0.])
 q0_2 = np.array([0., 0., 0., 0., 0., 0., 0.])
 # q0 = np.array([0.4201, 0.4719, 0.9226, 0.8089, 0.3113, 0.7598, 0.364 ])
 x0 = np.concatenate([q0_1, q0_1, np.zeros(2)])
+# # uncomment to warm start traj
+# us0=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0.npy")
+# xs0=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0.npy")
+# x0=xs0[0,:]
+
 sys.set_init_state(x0)
-
-# #### Try forward kinematics
-pos1_0, quat1_0, pos2_0, quat2_0 = sys.compute_ee(x0, link_id)
-
-# Put the ball at the end-effector
-p.resetBasePositionAndOrientation(ballId1, pos1_0, quat1_0)
-p.resetBasePositionAndOrientation(ballId2, pos2_0, quat2_0)
-
 # #### Set initial control output
 # set initial control output to be all zeros
 us = np.zeros((T + 1, sys.Du))
 _ = sys.compute_matrices(x=None, u=us[0])
 xs = sys.rollout(us[:-1])
+
+# #### Try forward kinematics
+pos1_0, quat1_0, pos2_0, quat2_0 = sys.compute_ee(x0, link_id)
+# Put the ball at the end-effector
+p.resetBasePositionAndOrientation(ballId1, pos1_0, quat1_0)
+p.resetBasePositionAndOrientation(ballId2, pos2_0, quat2_0)
 
 # #### Plot initial trajectory
 sys.vis_traj(xs)
@@ -97,8 +99,8 @@ R = np.diag(np.concatenate((Rfactor_dq1*np.ones(7),Rfactor_dq2*np.ones(7),[Rfact
 
 qobs=0
 obs_thresh=10
-model_Q_obs_x=1e0
-model_Q_obs_s=1e0
+model_Q_obs_x=1e2
+model_Q_obs_s=1e2
 Qobs=np.diag(np.concatenate((model_Q_obs_x*np.ones(3),[model_Q_obs_s])))
 
 s1_ref=10
@@ -155,4 +157,9 @@ sys.vis_traj(ilqr_cost.xs, vis_dt=0.1)
 
 # # #### Compute Error
 pos1, _, pos2, _ = sys.compute_ee(ilqr_cost.xs[-1], link_id)
+
 print('pos1-p_target_1={}, pos2-p_target_2={}'.format(pos1-p_target_1, pos2-p_target_2))
+
+# # uncomment to save warm start traj
+np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0.npy",ilqr_cost.xs)
+np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0.npy",ilqr_cost.us)
