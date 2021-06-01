@@ -273,8 +273,8 @@ class URDFRobot_spacetime_dual():
             p.resetJointState(self.robot2_id, self.joint_indices[i], q2[i])
         return
 
-    def vis_traj(self, xs, dt=0.1):
+    def vis_traj(self, xs, vis_dt=0.1):
         for x in xs:
             clear_output(wait=True)
             self.set_q(x)
-            time.sleep(self.dt)
+            time.sleep(vis_dt)

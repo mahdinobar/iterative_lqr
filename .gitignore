@@ -1,4 +1,6 @@
 *.pyc
 *checkpoint.ipynb
 .idea/
+/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp
+notebooks/tmp/
 

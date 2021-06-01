@@ -26,10 +26,10 @@ p.resetSimulation()
 p.loadURDF('plane.urdf')
 
 robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
-p_target_1 = np.array([.7,.5,.5])
-p_target_2 = np.array([.7,0.,.5])
 robot1_id = p.loadURDF(robot_urdf, basePosition=[0.,0.,0.], useFixedBase=1)
 robot2_id = p.loadURDF(robot_urdf, basePosition=[0.,.7,0.], useFixedBase=1)
+p_target_1 = np.array([.7,.0,.5])
+p_target_2 = np.array([.7,0.7,.5])
 joint_limits = get_joint_limits(robot1_id, 7)
 
 # Define the end-effector
@@ -46,7 +46,8 @@ for i in range(p.getNumJoints(robot1_id)):
     print(i, p.getJointInfo(robot2_id, i)[1])
 
 # Construct the robot system
-dt = 0.05
+n_iter = 20
+dt = 0.01
 T = 100
 dof = 7
 sys = URDFRobot_spacetime_dual(dof=dof, robot1_id=robot1_id, robot2_id=robot2_id, dt=dt)
@@ -78,21 +79,35 @@ sys.vis_traj(xs)
 Qfactor_q1=1e0
 Qfactor_q2=1e0
 Q = np.diag(np.concatenate((Qfactor_q1*np.ones(7),Qfactor_q2*np.ones(7),[0, 0])))
+Qtarget_s1=1e0
+Qtarget_s2=1e0
+Qf = np.diag(np.concatenate((np.zeros(14),[Qtarget_s1, Qtarget_s2])))
 
-model_Q_obs_x=1e0
-model_Q_obs_s=1e0
-Qobs=np.diag(np.concatenate((model_Q_obs_x*np.ones(3),[model_Q_obs_s])))
-qobs=1e-1
-obs_thresh=10
-
-WTfactor_p1=1e0
-WTfactor_p2=1e0
+WTfactor_p1=1e2
+WTfactor_p2=1e2
 W = np.zeros((6,6))
 WT = np.diag(np.concatenate((WTfactor_p1*np.ones(3),WTfactor_p2*np.ones(3))))
 
-Qf = np.eye(sys.Dx) * 1
-Qf[0:sys.dof, 0:sys.dof] *= 0.01  # only put cost regularization on the velocity, not on the joint angles
-R = np.eye(sys.Du) * 1e-6
+Rfactor_dq1=1e0
+Rfactor_dq2=1e0
+Rfactor_ds1=1e0
+Rfactor_ds2=1e0
+R = np.diag(np.concatenate((Rfactor_dq1*np.ones(7),Rfactor_dq2*np.ones(7),[Rfactor_ds1,Rfactor_ds2])))
+
+qobs=0
+obs_thresh=10
+model_Q_obs_x=1e0
+model_Q_obs_s=1e0
+Qobs=np.diag(np.concatenate((model_Q_obs_x*np.ones(3),[model_Q_obs_s])))
+
+s1_final=10
+s2_final=10
+ds1_ref=0.1
+ds2_ref=0.1
+x_ref= np.concatenate((np.zeros(sys.Dx-2),[s1_final,s2_final]))
+u_ref= np.concatenate((np.zeros(sys.Dx-2),[ds1_ref,ds2_ref]))
+
+# todo for batch?
 mu = 1e-6  # regularization coefficient
 # #### Set end effector target
 # W and WT: cost coefficients for the end-effector reaching task
@@ -104,13 +119,6 @@ p.resetBasePositionAndOrientation(ballId2, p_target_2, (0, 0, 0, 1))
 # #### Define the cost
 # The costs consist of: a) state regularization (Q), b) control regularization (R), and c) End-effector reaching task (W)
 # Running cost is for the time 0 <= t < T, while terminal cost is for the time t = T
-s1_final=10
-s2_final=10
-ds1_ref=0.1
-ds2_ref=0.1
-x_ref= np.concatenate((np.zeros(sys.Dx-2),[s1_final,s2_final]))
-u_ref= np.concatenate((np.zeros(sys.Dx-2),[ds1_ref,ds2_ref]))
-
 costs = []
 for i in range(T):
     runningStateCost = CostModelQuadratic(sys, Q=Q, x_ref=x_ref)
@@ -133,17 +141,17 @@ ilqr_cost.set_timestep(T)
 ilqr_cost.set_cost(costs)
 ilqr_cost.set_state(xs, us)  # set initial trajectory
 
+# todo for batch?
 ilqr_cost.mu = 1e-5
 
 # #### Solve and Plot
-n_iter = 10
 ilqr_cost.solve(n_iter, method='batch', threshold_alpha=1e-5)
 xs_batch, us_batch = ilqr_cost.xs, ilqr_cost.us
 # clear_output()
 
 # #### Play traj
-sys.vis_traj(ilqr_cost.xs)
+sys.vis_traj(ilqr_cost.xs, vis_dt=0.1)
 
-# #### Compute Error
-pos1, _, pos2, _ = sys.compute_ee(ilqr_cost.xs[-1], link_id)
+# # #### Compute Error
+# pos1, _, pos2, _ = sys.compute_ee(ilqr_cost.xs[-1], link_id)
 

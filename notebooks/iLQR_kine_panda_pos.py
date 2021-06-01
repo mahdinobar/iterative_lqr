@@ -80,8 +80,8 @@ sys = URDFRobot(dof=dof, robot_id=robot_id, dt = dt)
 
 
 q0 = np.random.rand(7)
-q0 = np.array([0.,0.,0.,0.,0.,0.,0.])
-#q0 = np.array([0.4201, 0.4719, 0.9226, 0.8089, 0.3113, 0.7598, 0.364 ])
+# q0 = np.array([0.,0.,0.,0.,0.,0.,0.])
+q0 = np.array([0.4201, 0.4719, 0.4226, 0.5089, 0.3113, 0.3598, 0.364 ])
 x0 = np.concatenate([q0, np.zeros(7)])
 sys.set_init_state(x0)
 
@@ -130,7 +130,7 @@ mu = 1e-6          #regularization coefficient
 
 
 #W and WT: cost coefficients for the end-effector reaching task
-p_target = np.array([0.5, -.6, 0.3])
+p_target = np.array([0.6, 0.7, 0.3])
 W = np.eye(3)*1
 WT = np.eye(3)*100
 
@@ -194,6 +194,8 @@ n_iter = 30
 ilqr_cost.solve(n_iter, method='recursive')
 xs_batch, us_batch = ilqr_cost.xs, ilqr_cost.us
 
+from scipy.io import savemat
+# savemat("/home/mahdi/PhD application/ETH/Rupenyan/code/data_driven_controller/q6u6.mat", dict(q=xs_batch[:,5], u=us_batch[:,5]))
 #clear_output()
 
 
