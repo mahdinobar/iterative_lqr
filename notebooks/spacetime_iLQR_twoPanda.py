@@ -47,8 +47,8 @@ for i in range(p.getNumJoints(robot1_id)):
 
 # Construct the robot system
 n_iter = 20
-dt = 0.01
-T = 100
+dt = 0.1
+T = 10 # number of data points
 dof = 7
 sys = URDFRobot_spacetime_dual(dof=dof, robot1_id=robot1_id, robot2_id=robot2_id, dt=dt)
 
@@ -70,23 +70,23 @@ p.resetBasePositionAndOrientation(ballId2, pos2_0, quat2_0)
 # #### Set initial control output
 # set initial control output to be all zeros
 us = np.zeros((T + 1, sys.Du))
-_ = sys.compute_matrices(us[0])
+_ = sys.compute_matrices(x=None, u=us[0])
 xs = sys.rollout(us[:-1])
 
 # #### Plot initial trajectory
 sys.vis_traj(xs)
 # #### Set the regularization cost coefficients Q and R
-Qfactor_q1=1e0
-Qfactor_q2=1e0
-Q = np.diag(np.concatenate((Qfactor_q1*np.ones(7),Qfactor_q2*np.ones(7),[0, 0])))
-Qtarget_s1=1e0
-Qtarget_s2=1e0
-Qf = np.diag(np.concatenate((np.zeros(14),[Qtarget_s1, Qtarget_s2])))
+Q_q1=1e-3
+Q_q2=1e-3
+Q = np.diag(np.concatenate((Q_q1*np.ones(7),Q_q2*np.ones(7),[0, 0])))
+QT_s1=1e0
+QT_s2=1e0
+Qf = np.diag(np.concatenate((np.zeros(14),[QT_s1, QT_s2])))
 
-WTfactor_p1=1e2
-WTfactor_p2=1e2
 W = np.zeros((6,6))
-WT = np.diag(np.concatenate((WTfactor_p1*np.ones(3),WTfactor_p2*np.ones(3))))
+WT_p1=1e2
+WT_p2=1e2
+WT = np.diag(np.concatenate((WT_p1*np.ones(3),WT_p2*np.ones(3))))
 
 Rfactor_dq1=1e0
 Rfactor_dq2=1e0
@@ -100,11 +100,11 @@ model_Q_obs_x=1e0
 model_Q_obs_s=1e0
 Qobs=np.diag(np.concatenate((model_Q_obs_x*np.ones(3),[model_Q_obs_s])))
 
-s1_final=10
-s2_final=10
-ds1_ref=0.1
-ds2_ref=0.1
-x_ref= np.concatenate((np.zeros(sys.Dx-2),[s1_final,s2_final]))
+s1_ref=10
+s2_ref=10
+x_ref= np.concatenate((np.zeros(sys.Dx-2),[s1_ref,s2_ref]))
+ds1_ref=s1_ref/T
+ds2_ref=s2_ref/T
 u_ref= np.concatenate((np.zeros(sys.Dx-2),[ds1_ref,ds2_ref]))
 
 # todo for batch?

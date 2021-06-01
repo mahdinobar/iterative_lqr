@@ -219,7 +219,7 @@ class URDFRobot_spacetime_dual():
         self.x0 = x0
         self.set_q(x0)
 
-    def compute_matrices(self, u):
+    def compute_matrices(self, x, u):
         # linearize system
         A = np.eye(self.Dx)
         B = np.diag(np.concatenate((u[14]*np.ones(self.dof),u[15]*np.ones(self.dof),[1,1])))
