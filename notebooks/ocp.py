@@ -192,7 +192,7 @@ class ILQR():
         for i in range(n_iter):
             self.calc_diff()
 
-            epsilon_kapa = 1e-1
+            epsilon_kapa = 1e-2
             mio_kapa = 0.2
             self.Kapa = 1e0
             # for Barrier internal method
