@@ -67,17 +67,20 @@ class ILQR():
         return self.cost
     
     def forward_pass(self, max_iter = 100, method = 'batch'):
-        cost0 = self.calc_cost(self.xs, self.us)
+        LB0 = self.Kapa * np.sum(np.log10(self.us[:-1, 14] * self.us[:-1, 15]))
+        cost0 = self.calc_cost(self.xs, self.us) + LB0
         print('cost0=',cost0)
         alpha = 1.
         fac = 0.5
         cost = 5*np.abs(cost0)
-        
+
         n_iter = 0
 
         # while cost > cost0 and n_iter < max_iter:
         while cost > cost0 and alpha > self.threshold_alpha:
             if method == 'recursive':
+                # todo adjust recursive method wrt Barrier
+                raise ValueError('Recursive method compatibility must be verified with Barrier')
                 xs_new = []
                 us_new = []
                 x = self.x0.copy()
@@ -89,7 +92,7 @@ class ILQR():
                     us_new += [u]
 
                 us_new += [np.zeros(self.Du)]  #add the last control as 0, for convenience
-                
+
             elif method == 'batch':
                 #use the actual dynamic for rollout
                 xs_new = []
@@ -103,18 +106,19 @@ class ILQR():
                     xs_new += [x]
                     us_new += [u]
                 us_new += [np.zeros(self.Du)]  #add the last control as 0, for convenience
-
+                LB = self.Kapa * np.sum(np.log10(np.array(us_new)[:-1, 14] * np.array(us_new)[:-1, 15]))
                 #use the linearized dynamic for rollout
 #                 dxs  = self.Sx.dot(np.zeros(self.Dx)) + self.Su.dot(alpha*self.del_us_ls)
 #                 dus = alpha*self.del_us_ls.reshape(-1, self.Du)
 #                 dxs = dxs.reshape(-1, self.Dx)
 #                 xs_new = self.xs + dxs
 #                 us_new = self.us + dus
-                
-            cost = self.calc_cost(xs_new,us_new)
+
+            cost = self.calc_cost(xs_new,us_new)+LB
             print('alpha={},cost={}'.format(alpha,cost))
             alpha *= fac
             n_iter += 1
+
         if n_iter == max_iter :
             raise ValueError('Cannot find a good direction')
         self.xs, self.us = np.array(xs_new), np.array(us_new)
@@ -139,20 +143,23 @@ class ILQR():
                 self.Vx[i] = self.Qx[i] - self.Qu[i].dot(Quuinv).dot(self.Qux[i])
                 self.Vxx[i] = self.Qxx[i] - self.Qux[i].T.dot(Quuinv).dot(self.Qux[i])
                 #ensure symmetrical Vxx
-                self.Vxx[i] = 0.5*(self.Vxx[i] + self.Vxx[i].T)      
-        
+                self.Vxx[i] = 0.5*(self.Vxx[i] + self.Vxx[i].T)
+
         elif method == 'batch':
             self.Qs = np.zeros(((self.T+1)*self.Dx,(self.T+1)*self.Dx))
             self.Rs = np.zeros(((self.T+1)*self.Du,(self.T+1)*self.Du))
 
+            LBu=[]
             for i in range(self.T+1):
                 self.Qs[self.Dx*i:self.Dx*(i+1),self.Dx*i:self.Dx*(i+1)] = self.Lxx[i]
-                self.Rs[self.Du*i:self.Du*(i+1),self.Du*i:self.Du*(i+1)] = self.Luu[i]
+                LBuu = self.Kapa * np.diag(np.hstack((np.zeros(14), [1 / (self.us[i, 14] ** 2), 1 / (self.us[i, 15] ** 2)])))
+                self.Rs[self.Du*i:self.Du*(i+1),self.Du*i:self.Du*(i+1)] = self.Luu[i]+LBuu
+                LBu = np.append(LBu, self.Kapa * np.hstack((np.zeros(14), -1 / (self.us[i, 14]), -1 / self.us[i, 15])))
 
             self.Sx = np.zeros((self.Dx*(self.T+1),self.Dx))
             self.Su = np.zeros((self.Dx*(self.T+1),self.Du*(self.T+1)))
 
-            #### Calculate Sx and Su 
+            #### Calculate Sx and Su
             i = 0
             self.Sx[self.Dx*i:self.Dx*(i+1), :] = np.eye(self.Dx)
             for i in range(1, self.T+1):
@@ -163,9 +170,9 @@ class ILQR():
                 self.Su[self.Dx*i:self.Dx*(i+1), :self.Du*(i-1)] = self.Fx[i-1].dot(self.Su[self.Dx*(i-1):self.Dx*(i), :self.Du*(i-1)])
 
             self.Lxs = self.Lx.flatten()
-            self.Lus = self.Lu.flatten()
+            self.Lus = self.Lu.flatten()+LBu
 
-            #### Calculate X and U 
+            #### Calculate X and U
             self.Sigma_u_inv = (self.Su.T.dot(self.Qs.dot(self.Su)) + self.Rs)
             self.del_us_ls = -np.linalg.solve(self.Sigma_u_inv, self.Su.T.dot(self.Qs.dot(self.Sx.dot(-np.zeros(self.Dx)))) + self.Lxs.dot(self.Su) + self.Lus )
             self.del_xs_ls = self.Sx.dot(np.zeros(self.Dx)) + self.Su.dot(self.del_us_ls)
@@ -174,9 +181,17 @@ class ILQR():
         self.threshold_alpha=threshold_alpha
         for i in range(n_iter):
             self.calc_diff()
-            self.backward_pass(method=method)
+
+            epsilon_kapa = 1e-1
+            mio_kapa = 0.2
+            self.Kapa = 1e0
+            # for Barrier internal method
+            while self.Kapa > epsilon_kapa:
+                self.backward_pass(method=method)
             # try:
-            dcost = self.forward_pass(method=method)
+                dcost = self.forward_pass(method=method)
+                self.Kapa = mio_kapa * self.Kapa
+
             if verbose is False:
                 clear_output(wait=True)
             # todo uncomment ?

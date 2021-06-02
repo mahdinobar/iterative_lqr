@@ -18,9 +18,9 @@ np.set_printoptions(precision=4, suppress=True)
 
 # #### Setup pybullet with the urdf
 # configure pybullet and load plane.urdf and quadcopter.urdf
-# physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
-physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/test.mp4\" --mp4fps=10")  # pybullet with visualisation
-p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-30, cameraTargetPosition=[0,0.5,0])
+physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
+# physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/test.mp4\" --mp4fps=10")  # pybullet with visualisation
+# p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-30, cameraTargetPosition=[0,0.5,0])
 p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.resetSimulation()
@@ -53,19 +53,22 @@ dt = 0.5
 dof = 7
 sys = URDFRobot_spacetime_dual(dof=dof, robot1_id=robot1_id, robot2_id=robot2_id, dt=dt)
 
-# # Set the initial state
-# q0_1 = np.array([0., 0., 0., 0., 0., 0., 0.])
-# q0_2 = np.array([0., 0., 0., 0., 0., 0., 0.])
-# x0 = np.concatenate([q0_1, q0_1, np.zeros(2)])
+# Set the initial state
+q0_1 = np.array([0., 0., 0., 0., 0., 0., 0.])
+q0_2 = np.array([0., 0., 0., 0., 0., 0., 0.])
+x0 = np.concatenate([q0_1, q0_1, np.zeros(2)])
+
 # # uncomment to warm start traj
-us0=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0.npy")
-xs0=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0.npy")
-x0=xs0[0,:]
+# us=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0.npy")
+# xs=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0.npy")
+# x0=xs[0,:]
 
 sys.set_init_state(x0)
-# #### Set initial control output
+
+#### Set initial control output
 # set initial control output to be all zeros
-us = np.zeros((T + 1, sys.Du))
+# add epsilon offset to avoid barrier
+us = np.hstack((np.zeros((T + 1, sys.Du-2)),1e-3*np.ones((T + 1, 2))))
 _ = sys.compute_matrices(x=None, u=us[0])
 xs = sys.rollout(us[:-1])
 
@@ -136,6 +139,7 @@ idx= np.linspace(1,T,nbViaPnts+2, dtype='int')[1:-1]
 id=0
 costs = []
 for i in range(T):
+    # BarrierCost = CostModelBarrier(sys, K=K, x_ref=x_ref)
     if any(i == c for c in idx):
         runningEECost = CostModelQuadraticTranslation_dual(sys, W=Wvia, ee_id=link_id, p_target_1=ViaPnts1[id],
                                                            p_target_2=ViaPnts2[id])
