@@ -319,6 +319,7 @@ class CostModelObstacle_exp4():
         p1, _, p2, _ = self.sys.compute_ee(x, self.ee_id)
         e= np.append(p1,x[14])-np.append(p2,x[15])
         d=0.5*e.T.dot(self.Qobs).dot(e)
+        print('d=',d)
         if d<self.th:
             fobs=np.exp(-d)-np.exp(-self.th)
         else:

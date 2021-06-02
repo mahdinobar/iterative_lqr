@@ -29,8 +29,8 @@ p.loadURDF('plane.urdf')
 robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 robot1_id = p.loadURDF(robot_urdf, basePosition=[0., 0.0, 0.], useFixedBase=1)
 robot2_id = p.loadURDF(robot_urdf, basePosition=[0., 0.7, 0.], useFixedBase=1)
-p_target_1 = np.array([.5, 0.7, .5])
-p_target_2 = np.array([.5, 0.0, .5])
+p_target_1 = np.array([.6, 0.0, .5])
+p_target_2 = np.array([.6, 0.7, .5])
 joint_limits = get_joint_limits(robot1_id, 7)
 
 # Define the end-effector
@@ -56,9 +56,8 @@ sys = URDFRobot_spacetime_dual(dof=dof, robot1_id=robot1_id, robot2_id=robot2_id
 # # Set the initial state
 # q0_1 = np.array([0., 0., 0., 0., 0., 0., 0.])
 # q0_2 = np.array([0., 0., 0., 0., 0., 0., 0.])
-# # q0 = np.array([0.4201, 0.4719, 0.9226, 0.8089, 0.3113, 0.7598, 0.364 ])
 # x0 = np.concatenate([q0_1, q0_1, np.zeros(2)])
-# uncomment to warm start traj
+# # uncomment to warm start traj
 us0=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0.npy")
 xs0=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0.npy")
 x0=xs0[0,:]
@@ -77,7 +76,13 @@ p.resetBasePositionAndOrientation(ballId1, pos1_0, quat1_0)
 p.resetBasePositionAndOrientation(ballId2, pos2_0, quat2_0)
 
 # #### Plot initial trajectory
-sys.vis_traj(xs)
+# interpolate the virtual time for visualization of both
+xs_interp=np.zeros(xs.shape)
+tt=np.linspace(0,np.max(xs[:,14:]), T)
+for i in range(dof):
+    xs_interp[:,i] = np.interp(T, xs[:,14],xs[:,i])
+    xs_interp[:,dof+i] = np.interp(T, xs[:, 15], xs[:, dof+i])
+sys.vis_traj(xs_interp)
 # #### Set the regularization cost coefficients Q and R
 Q_q1=1e-3
 Q_q2=1e-3
@@ -90,6 +95,7 @@ W = np.zeros((6,6))
 WT_p1=1e2
 WT_p2=1e2
 WT = np.diag(np.concatenate((WT_p1*np.ones(3),WT_p2*np.ones(3))))
+Wvia=WT
 
 Rfactor_dq1=1e0
 Rfactor_dq2=1e0
@@ -98,9 +104,9 @@ Rfactor_ds2=1e0
 R = np.diag(np.concatenate((Rfactor_dq1*np.ones(7),Rfactor_dq2*np.ones(7),[Rfactor_ds1,Rfactor_ds2])))
 
 qobs=1
-obs_thresh=10
-model_Q_obs_x=1e2
-model_Q_obs_s=1e2
+obs_thresh=30
+model_Q_obs_x=1e1
+model_Q_obs_s=1e1
 Qobs=np.diag(np.concatenate((model_Q_obs_x*np.ones(3),[model_Q_obs_s])))
 
 s1_ref=10
@@ -122,11 +128,23 @@ p.resetBasePositionAndOrientation(ballId2, p_target_2, (0, 0, 0, 1))
 # #### Define the cost
 # The costs consist of: a) state regularization (Q), b) control regularization (R), and c) End-effector reaching task (W)
 # Running cost is for the time 0 <= t < T, while terminal cost is for the time t = T
+
+ViaPnts1=np.array([[.3, .7, .5]])
+ViaPnts2=np.array([[.3, .0, .5]])
+nbViaPnts=np.shape(ViaPnts1)[0]
+idx= np.linspace(1,T,nbViaPnts+2, dtype='int')[1:-1]
+id=0
 costs = []
 for i in range(T):
+    if any(i == c for c in idx):
+        runningEECost = CostModelQuadraticTranslation_dual(sys, W=Wvia, ee_id=link_id, p_target_1=ViaPnts1[id],
+                                                           p_target_2=ViaPnts2[id])
+        id += 1
+    else:
+        runningEECost = CostModelQuadraticTranslation_dual(sys, W=W, ee_id=link_id, p_target_1=p_target_1,
+                                                           p_target_2=p_target_2)
     runningStateCost = CostModelQuadratic(sys, Q=Q, x_ref=x_ref)
     runningControlCost = CostModelQuadratic(sys, R=R, u_ref=u_ref)
-    runningEECost = CostModelQuadraticTranslation_dual(sys, W=W, ee_id=link_id, p_target_1=p_target_1, p_target_2=p_target_2)
     obstAvoidCost = CostModelObstacle_exp4(sys, ee_id=link_id, qobs=qobs, Qobs=Qobs, th=obs_thresh)
     runningCost = CostModelSum(sys, [runningStateCost, runningControlCost, runningEECost, obstAvoidCost])
     costs += [runningCost]
@@ -153,7 +171,13 @@ xs_batch, us_batch = ilqr_cost.xs, ilqr_cost.us
 # clear_output()
 
 # #### Play traj
-sys.vis_traj(ilqr_cost.xs, vis_dt=0.1)
+# interpolate the virtual time for visualization of both
+xs_interp=np.zeros(ilqr_cost.xs.shape)
+tt=np.linspace(0,np.max(ilqr_cost.xs[:,14:]), T)
+for i in range(dof):
+    xs_interp[:,i] = np.interp(T, ilqr_cost.xs[:,14],ilqr_cost.xs[:,i])
+    xs_interp[:,dof+i] = np.interp(T, ilqr_cost.xs[:, 15], ilqr_cost.xs[:, dof+i])
+sys.vis_traj(xs_interp, vis_dt=0.1)
 
 # # #### Compute Error
 pos1, _, pos2, _ = sys.compute_ee(ilqr_cost.xs[-1], link_id)
