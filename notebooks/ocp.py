@@ -67,11 +67,12 @@ class ILQR():
         return self.cost
     
     def forward_pass(self, max_iter = 100, method = 'batch'):
-        LB0 = self.Kapa * np.sum(np.log10(self.us[:-1, 14] * self.us[:-1, 15]))
+        LB0 = self.Kapa * np.sum(-np.log10(self.us[:-1, 14] * self.us[:-1, 15]))
         cost0 = self.calc_cost(self.xs, self.us) + LB0
         print('cost0=',cost0)
         alpha = 1.
         fac = 0.5
+        # todo
         cost = 5*np.abs(cost0)
 
         n_iter = 0
@@ -106,7 +107,10 @@ class ILQR():
                     xs_new += [x]
                     us_new += [u]
                 us_new += [np.zeros(self.Du)]  #add the last control as 0, for convenience
-                LB = self.Kapa * np.sum(np.log10(np.array(us_new)[:-1, 14] * np.array(us_new)[:-1, 15]))
+                if np.any(np.array(us_new)[:-1, 14:] <= 0):
+                    LB = np.inf
+                else:
+                    LB = self.Kapa * np.sum(-np.log10(np.array(us_new)[:-1, 14] * np.array(us_new)[:-1, 15]))
                 #use the linearized dynamic for rollout
 #                 dxs  = self.Sx.dot(np.zeros(self.Dx)) + self.Su.dot(alpha*self.del_us_ls)
 #                 dus = alpha*self.del_us_ls.reshape(-1, self.Du)
@@ -152,9 +156,15 @@ class ILQR():
             LBu=[]
             for i in range(self.T+1):
                 self.Qs[self.Dx*i:self.Dx*(i+1),self.Dx*i:self.Dx*(i+1)] = self.Lxx[i]
-                LBuu = self.Kapa * np.diag(np.hstack((np.zeros(14), [1 / (self.us[i, 14] ** 2), 1 / (self.us[i, 15] ** 2)])))
+                if i ==self.T:
+                    LBuu = self.Kapa * np.diag((np.zeros(16)))
+                    LBu = np.append(LBu, (np.zeros(16)))
+                else:
+                    LBuu = self.Kapa * np.diag(
+                        np.hstack((np.zeros(14), [1 / (self.us[i, 14] ** 2), 1 / (self.us[i, 15] ** 2)])))
+                    LBu = np.append(LBu,
+                                    self.Kapa * np.hstack((np.zeros(14), -1 / (self.us[i, 14]), -1 / self.us[i, 15])))
                 self.Rs[self.Du*i:self.Du*(i+1),self.Du*i:self.Du*(i+1)] = self.Luu[i]+LBuu
-                LBu = np.append(LBu, self.Kapa * np.hstack((np.zeros(14), -1 / (self.us[i, 14]), -1 / self.us[i, 15])))
 
             self.Sx = np.zeros((self.Dx*(self.T+1),self.Dx))
             self.Su = np.zeros((self.Dx*(self.T+1),self.Du*(self.T+1)))
