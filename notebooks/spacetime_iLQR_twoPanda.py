@@ -29,8 +29,8 @@ p.loadURDF('plane.urdf')
 robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 robot1_id = p.loadURDF(robot_urdf, basePosition=[0., 0.0, 0.], useFixedBase=1)
 robot2_id = p.loadURDF(robot_urdf, basePosition=[0., 0.7, 0.], useFixedBase=1)
-p_target_1 = np.array([.6, 0.0, .5])
-p_target_2 = np.array([.6, 0.7, .5])
+p_target_1 = np.array([.6, 0.7, .5])
+p_target_2 = np.array([.6, 0.0, .5])
 joint_limits = get_joint_limits(robot1_id, 7)
 
 # Define the end-effector
@@ -106,7 +106,7 @@ Rfactor_ds1=1e0
 Rfactor_ds2=1e0
 R = np.diag(np.concatenate((Rfactor_dq1*np.ones(7),Rfactor_dq2*np.ones(7),[Rfactor_ds1,Rfactor_ds2])))
 
-qobs=1
+qobs=0
 obs_thresh=30
 model_Q_obs_x=1e1
 model_Q_obs_s=1e1
@@ -132,19 +132,19 @@ p.resetBasePositionAndOrientation(ballId2, p_target_2, (0, 0, 0, 1))
 # The costs consist of: a) state regularization (Q), b) control regularization (R), and c) End-effector reaching task (W)
 # Running cost is for the time 0 <= t < T, while terminal cost is for the time t = T
 
-ViaPnts1=np.array([[.3, .7, .5]])
-ViaPnts2=np.array([[.3, .0, .5]])
+ViaPnts1=np.array([])
+ViaPnts2=np.array([])
 nbViaPnts=np.shape(ViaPnts1)[0]
 idx= np.linspace(1,T,nbViaPnts+2, dtype='int')[1:-1]
 id=0
 costs = []
 for i in range(T):
     # BarrierCost = CostModelBarrier(sys, K=K, x_ref=x_ref)
-    if any(i == c for c in idx):
+    if any(i == c for c in idx) and nbViaPnts>0:
         runningEECost = CostModelQuadraticTranslation_dual(sys, W=Wvia, ee_id=link_id, p_target_1=ViaPnts1[id],
                                                            p_target_2=ViaPnts2[id])
         id += 1
-    else:
+    elif nbViaPnts==0:
         runningEECost = CostModelQuadraticTranslation_dual(sys, W=W, ee_id=link_id, p_target_1=p_target_1,
                                                            p_target_2=p_target_2)
     runningStateCost = CostModelQuadratic(sys, Q=Q, x_ref=x_ref)
@@ -177,10 +177,13 @@ xs_batch, us_batch = ilqr_cost.xs, ilqr_cost.us
 # #### Play traj
 # interpolate the virtual time for visualization of both
 xs_interp=np.zeros(ilqr_cost.xs.shape)
-tt=np.linspace(0,np.max(ilqr_cost.xs[:,14:]), T)
+tt=np.linspace(0,np.max(ilqr_cost.xs[:,14:]), T+1)
+xs_interp[:,14]=ilqr_cost.xs[:,14]
+xs_interp[:,15]=tt
 for i in range(dof):
-    xs_interp[:,i] = np.interp(T, ilqr_cost.xs[:,14],ilqr_cost.xs[:,i])
-    xs_interp[:,dof+i] = np.interp(T, ilqr_cost.xs[:, 15], ilqr_cost.xs[:, dof+i])
+    xs_interp[:,i] = np.interp(tt, ilqr_cost.xs[:,14],ilqr_cost.xs[:,i])
+    xs_interp[:,dof+i] = np.interp(tt, ilqr_cost.xs[:, 15], ilqr_cost.xs[:, dof+i])
+
 sys.vis_traj(xs_interp, vis_dt=0.1)
 
 # # #### Compute Error
