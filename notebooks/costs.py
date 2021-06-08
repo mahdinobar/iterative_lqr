@@ -350,3 +350,100 @@ class CostModelObstacle_exp4():
         self.Lxx = (2*self.qobs/(1-np.exp(-self.th))**2)*Jobs.T.dot(Jobs)
         self.Luu = np.zeros((self.Du,self.Du))
         self.Lxu = np.zeros((self.Dx, self.Du))
+
+class CostModelObstacle_ellipsoids_exp4():
+    def __init__(self, sys, ee_id, qobs, Qobs, th):
+        # todo better coding
+        self.sys = sys
+        self.Dx, self.Du = sys.Dx, sys.Du
+        self.ee_id = ee_id
+        self.Qobs, self.qobs, self.th = Qobs, qobs, th
+        # self.Qobs1 = np.zeros((self.sys.robot1_id, 3, 3))
+
+    def calc(self, x, u):
+        # todo better coding
+        centers1, sizes1, rotations1, centers2, sizes2, rotations2 = self.sys.compute_elipsoids(x)
+        self.L = 0
+        for i in range(self.sys.robot1_id):
+            for j in range(self.sys.robot2_id):
+                # consider center1 as point mass and center2 as ellipsoid obstacle
+                e2= np.append(centers1[i, :],x[14])-np.append(centers2[j, :],x[15])
+                Qobs2 = np.linalg.inv(rotations2[j, :, :].dot(np.diag((sizes2[j, :]/2)**2)).dot(rotations2[j, :, :].T))
+                d2 = 0.5 * e2.T.dot(Qobs2).dot(e2)
+                print('d2=', d2)
+                if d2<self.th:
+                    fobs=np.exp(-d2)-np.exp(-self.th)
+                else:
+                    fobs=0
+                self.L += self.qobs/(1-np.exp(-self.th))**2*fobs**2
+                # consider center2 as point mass and center1 as ellipsoid obstacle
+                e1 = np.append(centers2[j, :], x[15]) - np.append(centers1[i, :], x[14])
+                Qobs1 = np.linalg.inv(
+                    rotations1[i, :, :].dot(np.diag((sizes1[i, :] / 2) ** 2)).dot(rotations1[i, :, :].T))
+                d1 = 0.5 * e1.T.dot(Qobs1).dot(e1)
+                print('d1=', d1)
+                if d1 < self.th:
+                    fobs = np.exp(-d1) - np.exp(-self.th)
+                else:
+                    fobs = 0
+                self.L += self.qobs / (1 - np.exp(-self.th)) ** 2 * fobs ** 2
+        return self.L
+
+    def calcDiff(self, x, u):
+        # todo improve coding?
+        centers1, sizes1, rotations1, centers2, sizes2, rotations2 = self.sys.compute_elipsoids(x)
+        self.Lx = np.zeros((x.shape[0]))
+        self.Lxx = np.zeros((x.shape[0], x.shape[0]))
+        for i in range(self.sys.robot1_id):
+            for j in range(self.sys.robot2_id):
+                # consider center1 as point mass and center2 as ellipsoid obstacle
+                e2 = np.append(centers1[i, :], x[14]) - np.append(centers2[j, :], x[15])
+                Qobs2 = np.linalg.inv(
+                    rotations2[j, :, :].dot(np.diag((sizes2[j, :] / 2) ** 2)).dot(rotations2[j, :, :].T))
+                d2 = 0.5 * e2.T.dot(Qobs2).dot(e2)
+                print('d2_dif=', d2)
+                if d2 < self.th:
+                    fobs = np.exp(-d2) - np.exp(-self.th)
+                    J1, J2 = self.sys.compute_ellipsoid_Jacobian(x, i, j)
+                    # only use translation jacobian
+                    J1 = J1[:3]
+                    J2 = J2[:3]
+                    de_dx = np.hstack(
+                        (np.vstack((J1, np.zeros(7))), np.vstack((-J2, np.zeros(7))),
+                         np.vstack((np.zeros((3, 2)), [1, -1]))))
+                    dd_dx = de_dx.T.dot(Qobs2).dot(e)
+                    Jobs = dd_dx.T.dot(fobs + np.exp(-self.th))
+                else:
+                    fobs = 0
+                    Jobs = np.zeros((1, self.Dx))
+                self.Lx += (2 * self.qobs / (1 - np.exp(-self.th)) ** 2) * Jobs.T.dot(fobs)
+                self.Lxx += (2 * self.qobs / (1 - np.exp(-self.th)) ** 2) * Jobs.T.dot(Jobs)
+
+                # consider center2 as point mass and center1 as ellipsoid obstacle
+                e1 = np.append(centers2[j, :], x[15]) - np.append(centers1[j, :], x[14])
+                Qobs1 = np.linalg.inv(
+                    rotations1[i, :, :].dot(np.diag((sizes1[i, :] / 2) ** 2)).dot(rotations1[i, :, :].T))
+                d1 = 0.5 * e1.T.dot(Qobs1).dot(e1)
+                print('d1_diff=', d1)
+                if d1 < self.th:
+                    fobs = np.exp(-d1) - np.exp(-self.th)
+                    J1, J2 = self.sys.compute_ellipsoid_Jacobian(x, j, i)
+                    # only use translation jacobian
+                    J1 = J1[:3]
+                    J2 = J2[:3]
+                    de_dx = np.hstack(
+                        (np.vstack((J1, np.zeros(7))), np.vstack((-J2, np.zeros(7))),
+                         np.vstack((np.zeros((3, 2)), [1, -1]))))
+                    dd_dx = de_dx.T.dot(Qobs1).dot(e1)
+                    Jobs = dd_dx.T.dot(fobs + np.exp(-self.th))
+                else:
+                    fobs = 0
+                    Jobs = np.zeros((1, self.Dx))
+                self.Lx += (2 * self.qobs / (1 - np.exp(-self.th)) ** 2) * Jobs.T.dot(fobs)
+                self.Lxx += (2 * self.qobs / (1 - np.exp(-self.th)) ** 2) * Jobs.T.dot(Jobs)
+
+                self.Lu = np.zeros((self.Du))
+                self.Luu = np.zeros((self.Du, self.Du))
+                self.Lxu = np.zeros((self.Dx, self.Du))
+
+

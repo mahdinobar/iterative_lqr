@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from IPython.display import clear_output
 import pybullet as p
 import time
+from scipy.spatial.transform import Rotation as R
 
 class LinearSystem():
     def __init__(self,A,B):
@@ -237,6 +238,47 @@ class URDFRobot_spacetime_dual():
         pos2 = np.array(ee2_data[0])
         quat2 = np.array(ee2_data[1])
         return pos1, quat1, pos2, quat2
+
+    def compute_elipsoids(self, x, ee_id=None):
+        self.set_q(x)
+        centers1 = np.zeros((p.getNumJoints(self.robot1_id),3))
+        sizes1 = np.array([[.2,.2,.1],
+                          [.1,.2,.2],
+                          [.1,.2,.2],
+                          [.2,.1,.2],
+                          [.2,.2,.2],
+                          [.1,.2,.3],
+                          [.1,.1,.2],
+                          [.1,.1,.1],
+                          [.1,.2,.1],
+                          [.02,.02,.1],
+                          [.02,.02,.1]])
+        rotations1 = np.zeros((p.getNumJoints(self.robot1_id), 3, 3))
+        centers2 = centers1
+        sizes2 = sizes1
+        rotations2 = rotations1
+        # scipy: quat: (x, y, z, w)
+        # pybullet: quat: [x,y,z,w]
+        for i in range(p.getNumJoints(self.robot1_id)):
+            centers1[i, :]=p.getLinkState(self.robot1_id, i)[0]
+            centers2[i, :]=p.getLinkState(self.robot2_id, i)[0]
+            r = R.from_quat(p.getLinkState(self.robot1_id, i)[1])
+            rotations1[i, :, :] = r.as_matrix()
+            r = R.from_quat(p.getLinkState(self.robot2_id, i)[1])
+            rotations2[i, :, :] = r.as_matrix()
+        return centers1, sizes1, rotations1, centers2, sizes2, rotations2
+
+    def compute_ellipsoid_Jacobian(self, x, link1, link2):
+        zeros = [0.] * self.dof
+        # todo give nonzero joint velocities?
+        Jl1, Ja1 = p.calculateJacobian(self.robot1_id, link1, [0., 0., 0.], x[:self.dof].tolist(), zeros, zeros)
+        Jl1, Ja1 = np.array(Jl1), np.array(Ja1)
+        self.J1 = np.concatenate([Jl1, Ja1], axis=0)
+        # todo give nonzero joint velocities?
+        Jl2, Ja2 = p.calculateJacobian(self.robot2_id, link2, [0., 0., 0.], x[self.dof:self.dof*2].tolist(), zeros, zeros)
+        Jl2, Ja2 = np.array(Jl2), np.array(Ja2)
+        self.J2 = np.concatenate([Jl2, Ja2], axis=0)
+        return self.J1, self.J2
 
     def compute_Jacobian(self, x, ee_id):
         zeros = [0.] * self.dof

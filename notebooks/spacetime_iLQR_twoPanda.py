@@ -18,9 +18,9 @@ np.set_printoptions(precision=4, suppress=True)
 
 # #### Setup pybullet with the urdf
 # configure pybullet and load plane.urdf and quadcopter.urdf
-# physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
-physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/test.mp4\" --mp4fps=10")  # pybullet with visualisation
-p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-30, cameraTargetPosition=[0,0.5,0])
+physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
+# physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/test.mp4\" --mp4fps=10")  # pybullet with visualisation
+# p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-30, cameraTargetPosition=[0,0.5,0])
 p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.resetSimulation()
@@ -45,9 +45,10 @@ _, _, ballId2 = create_primitives(radius=0.05, rgbaColor=[0, 0, 1, 1])
 for i in range(p.getNumJoints(robot1_id)):
     print(i, p.getJointInfo(robot1_id, i)[1])
     print(i, p.getJointInfo(robot2_id, i)[1])
+# getLinkState
 
 # Construct the robot system
-n_iter = 20
+n_iter = 3
 T = 20 # number of data points
 dt = 0.5
 dof = 7
@@ -109,9 +110,9 @@ Rfactor_ds2=1e0
 R = np.diag(np.concatenate((Rfactor_dq1*np.ones(7),Rfactor_dq2*np.ones(7),[Rfactor_ds1,Rfactor_ds2])))
 
 qobs=1
-obs_thresh=2
-model_Q_obs_x=1e1
-model_Q_obs_s=1e1
+obs_thresh=1
+model_Q_obs_x=1e0
+model_Q_obs_s=1e0
 Qobs=np.diag(np.concatenate((model_Q_obs_x*np.ones(3),[model_Q_obs_s])))
 
 s1_ref=10
@@ -151,13 +152,15 @@ for i in range(T):
                                                            p_target_2=p_target_2)
     runningStateCost = CostModelQuadratic(sys, Q=Q, x_ref=x_ref)
     runningControlCost = CostModelQuadratic(sys, R=R, u_ref=u_ref)
-    obstAvoidCost = CostModelObstacle_exp4(sys, ee_id=link_id, qobs=qobs, Qobs=Qobs, th=obs_thresh)
+    # obstAvoidCost = CostModelObstacle_exp4(sys, ee_id=link_id, qobs=qobs, Qobs=Qobs, th=obs_thresh)
+    obstAvoidCost = CostModelObstacle_ellipsoids_exp4(sys, ee_id=link_id, qobs=qobs, Qobs=Qobs, th=obs_thresh)
     runningCost = CostModelSum(sys, [runningStateCost, runningControlCost, runningEECost, obstAvoidCost])
     costs += [runningCost]
 terminalStateCost = CostModelQuadratic(sys, Q=Qf)
 terminalControlCost = CostModelQuadratic(sys, R=R)
 terminalEECost = CostModelQuadraticTranslation_dual(sys, W=WT, ee_id=link_id, p_target_1=p_target_1, p_target_2=p_target_2)
-obstAvoidCost = CostModelObstacle_exp4(sys, ee_id=link_id, qobs=qobs, Qobs=Qobs, th=obs_thresh)
+# obstAvoidCost = CostModelObstacle_exp4(sys, ee_id=link_id, qobs=qobs, Qobs=Qobs, th=obs_thresh)
+obstAvoidCost = CostModelObstacle_ellipsoids_exp4(sys, ee_id=link_id, qobs=qobs, Qobs=Qobs, th=obs_thresh)
 terminalCost = CostModelSum(sys, [terminalStateCost, terminalControlCost, terminalEECost, obstAvoidCost])
 costs += [terminalCost]
 
