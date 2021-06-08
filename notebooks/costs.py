@@ -365,8 +365,8 @@ class CostModelObstacle_ellipsoids_exp4():
         # todo better coding
         centers1, sizes1, rotations1, centers2, sizes2, rotations2 = self.sys.compute_elipsoids(x)
         self.L = 0
-        for i in range(self.sys.robot1_id):
-            for j in range(self.sys.robot2_id):
+        for i in range(11):
+            for j in range(11):
                 # consider center1 as point mass and center2 as ellipsoid obstacle
                 e2= np.append(centers1[i, :],x[14])-np.append(centers2[j, :],x[15])
                 Qobs2 = np.linalg.inv(rotations2[j, :, :].dot(np.diag((sizes2[j, :]/2)**2)).dot(rotations2[j, :, :].T))
@@ -397,8 +397,8 @@ class CostModelObstacle_ellipsoids_exp4():
         centers1, sizes1, rotations1, centers2, sizes2, rotations2 = self.sys.compute_elipsoids(x)
         self.Lx = np.zeros((x.shape[0]))
         self.Lxx = np.zeros((x.shape[0], x.shape[0]))
-        for i in range(self.sys.robot1_id):
-            for j in range(self.sys.robot2_id):
+        for i in range(11):
+            for j in range(11):
                 # consider center1 as point mass and center2 as ellipsoid obstacle
                 e2 = np.append(centers1[i, :], x[14]) - np.append(centers2[j, :], x[15])
                 Qobs2 = np.linalg.inv(
@@ -419,7 +419,11 @@ class CostModelObstacle_ellipsoids_exp4():
                     Jobs = dd_dx.T.dot(fobs + np.exp(-self.th))
                 else:
                     fobs = 0
-                    Jobs = np.zeros((1, self.Dx))
+                    Jobs = np.zeros((self.Dx))
+                # print ("(i,j)=({},{})".format(i,j))
+                # aa=(2 * self.qobs / (1 - np.exp(-self.th)) ** 2) * Jobs.T.dot(fobs)
+                # print(aa.shape)
+                # print(self.Lx.shape)
                 self.Lx += (2 * self.qobs / (1 - np.exp(-self.th)) ** 2) * Jobs.T.dot(fobs)
                 self.Lxx += (2 * self.qobs / (1 - np.exp(-self.th)) ** 2) * Jobs.T.dot(Jobs)
 
@@ -443,7 +447,7 @@ class CostModelObstacle_ellipsoids_exp4():
                     Jobs = dd_dx.T.dot(fobs + np.exp(-self.th))
                 else:
                     fobs = 0
-                    Jobs = np.zeros((1, self.Dx))
+                    Jobs = np.zeros((self.Dx))
                 self.Lx += (2 * self.qobs / (1 - np.exp(-self.th)) ** 2) * Jobs.T.dot(fobs)
                 self.Lxx += (2 * self.qobs / (1 - np.exp(-self.th)) ** 2) * Jobs.T.dot(Jobs)
 
