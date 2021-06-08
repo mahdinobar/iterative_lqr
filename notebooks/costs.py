@@ -352,12 +352,13 @@ class CostModelObstacle_exp4():
         self.Lxu = np.zeros((self.Dx, self.Du))
 
 class CostModelObstacle_ellipsoids_exp4():
-    def __init__(self, sys, ee_id, qobs, Qobs, th):
+    def __init__(self, sys, ee_id, qobs, th, model_Q_obs_s):
         # todo better coding
         self.sys = sys
         self.Dx, self.Du = sys.Dx, sys.Du
         self.ee_id = ee_id
-        self.Qobs, self.qobs, self.th = Qobs, qobs, th
+        self.qobs, self.th = qobs, th
+        self.model_Q_obs_s = model_Q_obs_s
         # self.Qobs1 = np.zeros((self.sys.robot1_id, 3, 3))
 
     def calc(self, x, u):
@@ -369,6 +370,7 @@ class CostModelObstacle_ellipsoids_exp4():
                 # consider center1 as point mass and center2 as ellipsoid obstacle
                 e2= np.append(centers1[i, :],x[14])-np.append(centers2[j, :],x[15])
                 Qobs2 = np.linalg.inv(rotations2[j, :, :].dot(np.diag((sizes2[j, :]/2)**2)).dot(rotations2[j, :, :].T))
+                Qobs2=block_diag(Qobs2, self.model_Q_obs_s)
                 d2 = 0.5 * e2.T.dot(Qobs2).dot(e2)
                 print('d2=', d2)
                 if d2<self.th:
@@ -380,6 +382,7 @@ class CostModelObstacle_ellipsoids_exp4():
                 e1 = np.append(centers2[j, :], x[15]) - np.append(centers1[i, :], x[14])
                 Qobs1 = np.linalg.inv(
                     rotations1[i, :, :].dot(np.diag((sizes1[i, :] / 2) ** 2)).dot(rotations1[i, :, :].T))
+                Qobs1=block_diag(Qobs1, self.model_Q_obs_s)
                 d1 = 0.5 * e1.T.dot(Qobs1).dot(e1)
                 print('d1=', d1)
                 if d1 < self.th:
@@ -400,6 +403,7 @@ class CostModelObstacle_ellipsoids_exp4():
                 e2 = np.append(centers1[i, :], x[14]) - np.append(centers2[j, :], x[15])
                 Qobs2 = np.linalg.inv(
                     rotations2[j, :, :].dot(np.diag((sizes2[j, :] / 2) ** 2)).dot(rotations2[j, :, :].T))
+                Qobs2=block_diag(Qobs2, self.model_Q_obs_s)
                 d2 = 0.5 * e2.T.dot(Qobs2).dot(e2)
                 print('d2_dif=', d2)
                 if d2 < self.th:
@@ -411,7 +415,7 @@ class CostModelObstacle_ellipsoids_exp4():
                     de_dx = np.hstack(
                         (np.vstack((J1, np.zeros(7))), np.vstack((-J2, np.zeros(7))),
                          np.vstack((np.zeros((3, 2)), [1, -1]))))
-                    dd_dx = de_dx.T.dot(Qobs2).dot(e)
+                    dd_dx = de_dx.T.dot(Qobs2).dot(e2)
                     Jobs = dd_dx.T.dot(fobs + np.exp(-self.th))
                 else:
                     fobs = 0
@@ -423,6 +427,7 @@ class CostModelObstacle_ellipsoids_exp4():
                 e1 = np.append(centers2[j, :], x[15]) - np.append(centers1[j, :], x[14])
                 Qobs1 = np.linalg.inv(
                     rotations1[i, :, :].dot(np.diag((sizes1[i, :] / 2) ** 2)).dot(rotations1[i, :, :].T))
+                Qobs1=block_diag(Qobs1, self.model_Q_obs_s)
                 d1 = 0.5 * e1.T.dot(Qobs1).dot(e1)
                 print('d1_diff=', d1)
                 if d1 < self.th:
