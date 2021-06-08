@@ -18,9 +18,10 @@ np.set_printoptions(precision=4, suppress=True)
 
 # #### Setup pybullet with the urdf
 # configure pybullet and load plane.urdf and quadcopter.urdf
-physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
-# physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/test.mp4\" --mp4fps=10")  # pybullet with visualisation
-# p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-30, cameraTargetPosition=[0,0.5,0])
+# physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
+# physicsClient = p.connect(p.GUI)  # pybullet with visualisation
+physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/test.mp4\" --mp4fps=10")  # pybullet with visualisation and recording
+p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-30, cameraTargetPosition=[0,0.5,0])
 p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.resetSimulation()
@@ -48,7 +49,7 @@ for i in range(p.getNumJoints(robot1_id)):
 # getLinkState
 
 # Construct the robot system
-n_iter = 3
+n_iter = 10
 T = 20 # number of data points
 dt = 0.5
 dof = 7

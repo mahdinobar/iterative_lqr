@@ -378,18 +378,19 @@ class CostModelObstacle_ellipsoids_exp4():
                 else:
                     fobs=0
                 self.L += self.qobs/(1-np.exp(-self.th))**2*fobs**2
-                # consider center2 as point mass and center1 as ellipsoid obstacle
-                e1 = np.append(centers2[j, :], x[15]) - np.append(centers1[i, :], x[14])
-                Qobs1 = np.linalg.inv(
-                    rotations1[i, :, :].dot(np.diag((sizes1[i, :] / 2) ** 2)).dot(rotations1[i, :, :].T))
-                Qobs1=block_diag(Qobs1, self.model_Q_obs_s)
-                d1 = 0.5 * e1.T.dot(Qobs1).dot(e1)
-                print('d1=', d1)
-                if d1 < self.th:
-                    fobs = np.exp(-d1) - np.exp(-self.th)
-                else:
-                    fobs = 0
-                self.L += self.qobs / (1 - np.exp(-self.th)) ** 2 * fobs ** 2
+
+                # # consider center2 as point mass and center1 as ellipsoid obstacle
+                # e1 = np.append(centers2[j, :], x[15]) - np.append(centers1[i, :], x[14])
+                # Qobs1 = np.linalg.inv(
+                #     rotations1[i, :, :].dot(np.diag((sizes1[i, :] / 2) ** 2)).dot(rotations1[i, :, :].T))
+                # Qobs1=block_diag(Qobs1, self.model_Q_obs_s)
+                # d1 = 0.5 * e1.T.dot(Qobs1).dot(e1)
+                # print('d1=', d1)
+                # if d1 < self.th:
+                #     fobs = np.exp(-d1) - np.exp(-self.th)
+                # else:
+                #     fobs = 0
+                # self.L += self.qobs / (1 - np.exp(-self.th)) ** 2 * fobs ** 2
         return self.L
 
     def calcDiff(self, x, u):
@@ -427,29 +428,29 @@ class CostModelObstacle_ellipsoids_exp4():
                 self.Lx += (2 * self.qobs / (1 - np.exp(-self.th)) ** 2) * Jobs.T.dot(fobs)
                 self.Lxx += (2 * self.qobs / (1 - np.exp(-self.th)) ** 2) * Jobs.T.dot(Jobs)
 
-                # consider center2 as point mass and center1 as ellipsoid obstacle
-                e1 = np.append(centers2[j, :], x[15]) - np.append(centers1[j, :], x[14])
-                Qobs1 = np.linalg.inv(
-                    rotations1[i, :, :].dot(np.diag((sizes1[i, :] / 2) ** 2)).dot(rotations1[i, :, :].T))
-                Qobs1=block_diag(Qobs1, self.model_Q_obs_s)
-                d1 = 0.5 * e1.T.dot(Qobs1).dot(e1)
-                print('d1_diff=', d1)
-                if d1 < self.th:
-                    fobs = np.exp(-d1) - np.exp(-self.th)
-                    J1, J2 = self.sys.compute_ellipsoid_Jacobian(x, j, i)
-                    # only use translation jacobian
-                    J1 = J1[:3]
-                    J2 = J2[:3]
-                    de_dx = np.hstack(
-                        (np.vstack((J1, np.zeros(7))), np.vstack((-J2, np.zeros(7))),
-                         np.vstack((np.zeros((3, 2)), [1, -1]))))
-                    dd_dx = de_dx.T.dot(Qobs1).dot(e1)
-                    Jobs = dd_dx.T.dot(fobs + np.exp(-self.th))
-                else:
-                    fobs = 0
-                    Jobs = np.zeros((self.Dx))
-                self.Lx += (2 * self.qobs / (1 - np.exp(-self.th)) ** 2) * Jobs.T.dot(fobs)
-                self.Lxx += (2 * self.qobs / (1 - np.exp(-self.th)) ** 2) * Jobs.T.dot(Jobs)
+                # # consider center2 as point mass and center1 as ellipsoid obstacle
+                # e1 = np.append(centers2[j, :], x[15]) - np.append(centers1[j, :], x[14])
+                # Qobs1 = np.linalg.inv(
+                #     rotations1[i, :, :].dot(np.diag((sizes1[i, :] / 2) ** 2)).dot(rotations1[i, :, :].T))
+                # Qobs1=block_diag(Qobs1, self.model_Q_obs_s)
+                # d1 = 0.5 * e1.T.dot(Qobs1).dot(e1)
+                # print('d1_diff=', d1)
+                # if d1 < self.th:
+                #     fobs = np.exp(-d1) - np.exp(-self.th)
+                #     J1, J2 = self.sys.compute_ellipsoid_Jacobian(x, j, i)
+                #     # only use translation jacobian
+                #     J1 = J1[:3]
+                #     J2 = J2[:3]
+                #     de_dx = np.hstack(
+                #         (np.vstack((J1, np.zeros(7))), np.vstack((-J2, np.zeros(7))),
+                #          np.vstack((np.zeros((3, 2)), [1, -1]))))
+                #     dd_dx = de_dx.T.dot(Qobs1).dot(e1)
+                #     Jobs = dd_dx.T.dot(fobs + np.exp(-self.th))
+                # else:
+                #     fobs = 0
+                #     Jobs = np.zeros((self.Dx))
+                # self.Lx += (2 * self.qobs / (1 - np.exp(-self.th)) ** 2) * Jobs.T.dot(fobs)
+                # self.Lxx += (2 * self.qobs / (1 - np.exp(-self.th)) ** 2) * Jobs.T.dot(Jobs)
 
                 self.Lu = np.zeros((self.Du))
                 self.Luu = np.zeros((self.Du, self.Du))
