@@ -18,11 +18,11 @@ np.set_printoptions(precision=4, suppress=True)
 
 # #### Setup pybullet with the urdf
 # configure pybullet and load plane.urdf and quadcopter.urdf
-# physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
+physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
 # physicsClient = p.connect(p.GUI)  # pybullet with visualisation
-physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/test.mp4\" --mp4fps=10")  # pybullet with visualisation and recording
-p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-30, cameraTargetPosition=[0,0.5,0])
-p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
+# physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/test.mp4\" --mp4fps=10")  # pybullet with visualisation and recording
+# p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-30, cameraTargetPosition=[0,0.5,0])
+# p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.resetSimulation()
 p.loadURDF('plane.urdf')
@@ -49,7 +49,7 @@ for i in range(p.getNumJoints(robot1_id)):
 # getLinkState
 
 # Construct the robot system
-n_iter = 10
+n_iter = 5
 T = 20 # number of data points
 dt = 0.5
 dof = 7
@@ -106,9 +106,11 @@ Wvia=WT
 
 Rfactor_dq1=1e-1
 Rfactor_dq2=1e-1
+Rfactor_dq2_j6=1e-1
+
 Rfactor_ds1=1e0
 Rfactor_ds2=1e0
-R = np.diag(np.concatenate((Rfactor_dq1*np.ones(7),Rfactor_dq2*np.ones(7),[Rfactor_ds1,Rfactor_ds2])))
+R = np.diag(np.concatenate((Rfactor_dq1*np.array([1,1,1,1,1,1,1]),Rfactor_dq2**np.array([1,1,1,1,1]),Rfactor_dq2_j6**np.array([1]),Rfactor_dq2**np.array([1]),[Rfactor_ds1,Rfactor_ds2])))
 
 qobs=1
 obs_thresh=1
@@ -188,6 +190,27 @@ tt=np.linspace(0,np.max(ilqr_cost.xs[:,14:]), nbVis)
 for i in range(dof):
     xs_interp[:,i] = np.interp(tt, ilqr_cost.xs[:,14],ilqr_cost.xs[:,i])
     xs_interp[:,dof+i] = np.interp(tt, ilqr_cost.xs[:, 15], ilqr_cost.xs[:, dof+i])
+
+
+# # unocmment to record only final traj
+p.disconnect()
+physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/test.mp4\" --mp4fps=10")  # pybullet with visualisation and recording
+p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-30, cameraTargetPosition=[0,0.5,0])
+p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
+p.setAdditionalSearchPath(pybullet_data.getDataPath())
+p.resetSimulation()
+p.loadURDF('plane.urdf')
+robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
+robot1_id = p.loadURDF(robot_urdf, basePosition=[0., 0.0, 0.], useFixedBase=1)
+robot2_id = p.loadURDF(robot_urdf, basePosition=[0., 0.7, 0.], useFixedBase=1)
+p_target_1 = np.array([.6, .7, .5])
+p_target_2 = np.array([.6, .0, .5])
+# Create a ball to show the target
+_, _, ballId1 = create_primitives(radius=0.05, rgbaColor=[1, 0, 0, 1])
+_, _, ballId2 = create_primitives(radius=0.05, rgbaColor=[0, 0, 1, 1])
+p.resetBasePositionAndOrientation(ballId1, p_target_1, (0, 0, 0, 1))
+p.resetBasePositionAndOrientation(ballId2, p_target_2, (0, 0, 0, 1))
+
 
 sys.vis_traj(xs_interp, vis_dt=0.1)
 

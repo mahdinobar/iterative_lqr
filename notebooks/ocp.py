@@ -190,13 +190,15 @@ class ILQR():
     def solve(self, n_iter = 3, method = 'batch', verbose = False, cost_thres = 1e-5, threshold_alpha=1e-5):
         self.threshold_alpha=threshold_alpha
         for i in range(n_iter):
-            self.calc_diff()
+            print('***********iteration=',i)
 
             epsilon_kapa = 1e-2
-            mio_kapa = 0.2
+            mio_kapa = 0.1
             self.Kapa = 1e0
             # for Barrier internal method
-            while self.Kapa > epsilon_kapa:
+            while self.Kapa >= epsilon_kapa:
+                self.calc_diff()
+
                 self.backward_pass(method=method)
             # try:
                 dcost = self.forward_pass(method=method)

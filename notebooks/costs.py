@@ -25,8 +25,9 @@ class CostModelQuadratic():
     
     def calc(self, x, u):
         self.L = 0.5*(x-self.x_ref).T.dot(self.Q).dot(x-self.x_ref) + 0.5*(u-self.u_ref).T.dot(self.R).dot(u-self.u_ref)
+        #print('{}={}'.format(type(self).__name__, self.L))
         return self.L
-    
+
     def calcDiff(self, x, u):
         self.Lx = self.Q.dot(x-self.x_ref)
         self.Lu = self.R.dot(u-self.u_ref)
@@ -41,23 +42,23 @@ class CostModelQuadraticOrientation():
     def __init__(self, sys, W, ee_id, o_target, p_ref = None, R_ref = None):
         self.sys = sys
         self.Dx, self.Du = sys.Dx,sys.Du
-        self.W = W            
+        self.W = W
         self.ee_id = ee_id
-        
+
         self.p_ref = p_ref #origin of the reference frame w.r.t. the world
         if p_ref is None: self.p_ref = np.zeros(3)
-        
+
         self.R_ref = R_ref #orientation of the reference frame w.r.t. the world
         if R_ref is not None:
             self.W = self.R_ref.dot(self.W).dot(self.R_ref.T) #transform the cost coefficient to the object frame
 
         self.set_target(o_target)
-        
+
     def change_quat_format(self, quat, change_from='xyzw'):
         '''
         Pybullet uses 'xyzw' convention for quaternion
         The function Logmap here uses 'wxyz' convention
-        So for the calculation, we change the pybullet format to the logmap 
+        So for the calculation, we change the pybullet format to the logmap
         '''
         if change_from == 'xyzw':
             #Change the format from xyzw to wxyz
@@ -65,7 +66,7 @@ class CostModelQuadraticOrientation():
         elif change_from == 'wxyz':
             #Change the format from wxyz to xyzw
             return np.hstack(( quat[1:], quat[0] ,  ))
-            
+
     def dQuatToDxJac(self,q):
         H = np.array([
             [-q[1] , q[0] , -q[3] , q[2]],
@@ -73,7 +74,7 @@ class CostModelQuadraticOrientation():
             [-q[3] , -q[2] , q[1] , q[0]],
         ])
         return H
-    
+
     def dist(self,x,y):
         dist = x.T @ y
         dist = 1 if dist > 1 else dist
@@ -86,15 +87,15 @@ class CostModelQuadraticOrientation():
 
     def logMap(self,base,y):
         temp = y - base.T @ y * base
-        
+
         if(np.linalg.norm(temp)==0):
             return np.zeros(len(y))
-        
+
         return self.dist(base,y) * temp / np.linalg.norm(temp)
 
     def set_target(self,o_target):
-        self.o_target = o_target 
-        
+        self.o_target = o_target
+
         if self.R_ref is not None:
             #o_ref is defined in the object coordinate system
             #Transform o_ref to the world coordinate system
@@ -102,10 +103,10 @@ class CostModelQuadraticOrientation():
             R_world = self.R_ref.dot(R_local)
             o_world = Rotation.from_matrix(R_world).as_quat()
             self.o_target = o_world
-            
+
         #self.o_target = np.hstack(( self.o_target[-1] , self.o_target[:-1] ))
         self.o_target = self.change_quat_format(self.o_target)
-        
+
     def calc(self,x,u):
         _,orn = self.sys.compute_ee(x,self.ee_id)
         orn = self.change_quat_format(orn) # XYZW to WXYZ
@@ -165,6 +166,7 @@ class CostModelQuadraticTranslation_dual():
     def calc(self, x, u):
         p1, _, p2, _ = self.sys.compute_ee(x, self.ee_id)
         self.L = 0.5 * (np.append(p1,p2) - np.append(self.p_target_1,self.p_target_2)).T.dot(self.W).dot(np.append(p1,p2) - np.append(self.p_target_1,self.p_target_2))
+        #print('{}={}'.format(type(self).__name__, self.L))
         return self.L
 
     def calcDiff(self, x, u):
@@ -191,31 +193,31 @@ class CostModelQuadraticTranslation():
         self.Dx, self.Du = sys.Dx, sys.Du
         self.W = W
         self.ee_id = ee_id
-        
+
         self.p_ref = p_ref #origin of the reference frame w.r.t. the world
         if p_ref is None: self.p_ref = np.zeros(3)
-        
+
         self.R_ref = R_ref #orientation of the reference frame w.r.t. the world
         if R_ref is not None:
             self.W = self.R_ref.dot(self.W).dot(self.R_ref.T) #transform the cost coefficient to the object frame
-        
+
         self.set_target(p_target)
-        
+
     def set_target(self, p_target):
         self.p_target = p_target
-        
+
         if self.R_ref is not None:
             #p_target is defined in the object coordinate system
             #Transform p_target to the world coordinate system for easier computation
             p_target_world = self.R_ref.dot(p_target) + self.p_ref
             self.p_target = p_target_world
-        
-        
+
+
     def calc(self, x, u):
         p,_ = self.sys.compute_ee(x, self.ee_id)
-        self.L = 0.5*(p-self.p_target).T.dot(self.W).dot(p-self.p_target) 
+        self.L = 0.5*(p-self.p_target).T.dot(self.W).dot(p-self.p_target)
         return self.L
-    
+
     def calcDiff(self, x, u):
         p,_      = self.sys.compute_ee(x, self.ee_id)
         self.J   = self.sys.compute_Jacobian(x, self.ee_id)[:3] #Only use the translation Jacobian
@@ -232,14 +234,14 @@ class CostModelSum():
         self.sys = sys
         self.costs = costs
         self.Dx, self.Du = sys.Dx, sys.Du
-    
+
     def calc(self, x, u):
         self.L = 0
         for i,cost in enumerate(self.costs):
             cost.calc(x, u)
             self.L += cost.L
         return self.L
-    
+
     def calcDiff(self, x, u):
         self.Lx = np.zeros(self.Dx)
         self.Lu = np.zeros(self.Du)
@@ -254,7 +256,7 @@ class CostModelSum():
             self.Lxx += cost.Lxx
             self.Luu += cost.Luu
             self.Lxu += cost.Lxu
-            
+
 class CostModelCollisionEllipsoid():
     '''
     The collision cost model between the end-effector and an ellipsoid obstacle
@@ -263,22 +265,22 @@ class CostModelCollisionEllipsoid():
         self.sys = sys
         self.Dx, self.Du = sys.Dx, sys.Du
         self.p_obs = p_obs #obstacle position
-        self.Sigma_obs = Sigma_obs #obstacle ellipse covariance matrix       
+        self.Sigma_obs = Sigma_obs #obstacle ellipse covariance matrix
         self.Sigma_obs_inv = np.linalg.inv(Sigma_obs)
-        
-        
+
+
         if R_obs is not None:
             self.R_obs = R_obs #orientation of the obstacle w.r.t. the world
-            self.Sigma_obs_inv = self.R_obs.dot(self.Sigma_obs_inv).dot(self.R_obs.T) #transform the cost coefficient to the object frame    
+            self.Sigma_obs_inv = self.R_obs.dot(self.Sigma_obs_inv).dot(self.R_obs.T) #transform the cost coefficient to the object frame
 
         self.w_obs = w_obs
         self.d_thres = d_thres
         self.obs_status = False
         self.ee_id = ee_id
-        
+
     def calc(self, x, u):
         p,_ = self.sys.compute_ee(x, self.ee_id)
-        self.normalized_d = (p-self.p_obs).T.dot(self.Sigma_obs_inv).dot(p-self.p_obs) 
+        self.normalized_d = (p-self.p_obs).T.dot(self.Sigma_obs_inv).dot(p-self.p_obs)
         if self.normalized_d < self.d_thres:
             self.obs_status = True #very near to the obstacle
             self.L = 0.5*self.w_obs*(self.normalized_d-self.d_thres)**2
@@ -286,13 +288,13 @@ class CostModelCollisionEllipsoid():
             self.obs_status = False
             self.L = 0
         return self.L
-    
+
     def calcDiff(self, x, u, recalc = True):
         if recalc:
             self.calc(x, u)
         self.J   = self.sys.compute_Jacobian(x, self.ee_id)[:3]  #Only use the translation part
         p,_      = self.sys.compute_ee(x, self.ee_id)
-        
+
         if self.obs_status:
             Jtemp = self.J.T.dot(self.Sigma_obs_inv).dot(p-self.p_obs)
             self.Lx = np.zeros(self.Dx)
@@ -302,7 +304,7 @@ class CostModelCollisionEllipsoid():
         else:
             self.Lx = np.zeros(self.Dx)
             self.Lxx = np.zeros((self.Dx, self.Dx))
-        
+
         self.Lu  = np.zeros(self.Du)
         self.Lxu = np.zeros((self.Dx, self.Du))
         self.Luu  = np.zeros((self.Du, self.Du))
@@ -372,25 +374,26 @@ class CostModelObstacle_ellipsoids_exp4():
                 Qobs2 = np.linalg.inv(rotations2[j, :, :].dot(np.diag((sizes2[j, :]/2)**2)).dot(rotations2[j, :, :].T))
                 Qobs2=block_diag(Qobs2, self.model_Q_obs_s)
                 d2 = 0.5 * e2.T.dot(Qobs2).dot(e2)
-                print('d2=', d2)
+                # print('d2=', d2)
                 if d2<self.th:
                     fobs=np.exp(-d2)-np.exp(-self.th)
                 else:
                     fobs=0
                 self.L += self.qobs/(1-np.exp(-self.th))**2*fobs**2
 
-                # # consider center2 as point mass and center1 as ellipsoid obstacle
-                # e1 = np.append(centers2[j, :], x[15]) - np.append(centers1[i, :], x[14])
-                # Qobs1 = np.linalg.inv(
-                #     rotations1[i, :, :].dot(np.diag((sizes1[i, :] / 2) ** 2)).dot(rotations1[i, :, :].T))
-                # Qobs1=block_diag(Qobs1, self.model_Q_obs_s)
-                # d1 = 0.5 * e1.T.dot(Qobs1).dot(e1)
+                # consider center2 as point mass and center1 as ellipsoid obstacle
+                e1 = np.append(centers2[j, :], x[15]) - np.append(centers1[i, :], x[14])
+                Qobs1 = np.linalg.inv(
+                    rotations1[i, :, :].dot(np.diag((sizes1[i, :] / 2) ** 2)).dot(rotations1[i, :, :].T))
+                Qobs1=block_diag(Qobs1, self.model_Q_obs_s)
+                d1 = 0.5 * e1.T.dot(Qobs1).dot(e1)
                 # print('d1=', d1)
-                # if d1 < self.th:
-                #     fobs = np.exp(-d1) - np.exp(-self.th)
-                # else:
-                #     fobs = 0
-                # self.L += self.qobs / (1 - np.exp(-self.th)) ** 2 * fobs ** 2
+                if d1 < self.th:
+                    fobs = np.exp(-d1) - np.exp(-self.th)
+                else:
+                    fobs = 0
+                self.L += self.qobs / (1 - np.exp(-self.th)) ** 2 * fobs ** 2
+        #print('{}={}'.format(type(self).__name__, self.L))
         return self.L
 
     def calcDiff(self, x, u):
@@ -406,7 +409,7 @@ class CostModelObstacle_ellipsoids_exp4():
                     rotations2[j, :, :].dot(np.diag((sizes2[j, :] / 2) ** 2)).dot(rotations2[j, :, :].T))
                 Qobs2=block_diag(Qobs2, self.model_Q_obs_s)
                 d2 = 0.5 * e2.T.dot(Qobs2).dot(e2)
-                print('d2_dif=', d2)
+                # print('d2_dif=', d2)
                 if d2 < self.th:
                     fobs = np.exp(-d2) - np.exp(-self.th)
                     J1, J2 = self.sys.compute_ellipsoid_Jacobian(x, i, j)
@@ -428,29 +431,29 @@ class CostModelObstacle_ellipsoids_exp4():
                 self.Lx += (2 * self.qobs / (1 - np.exp(-self.th)) ** 2) * Jobs.T.dot(fobs)
                 self.Lxx += (2 * self.qobs / (1 - np.exp(-self.th)) ** 2) * Jobs.T.dot(Jobs)
 
-                # # consider center2 as point mass and center1 as ellipsoid obstacle
-                # e1 = np.append(centers2[j, :], x[15]) - np.append(centers1[j, :], x[14])
-                # Qobs1 = np.linalg.inv(
-                #     rotations1[i, :, :].dot(np.diag((sizes1[i, :] / 2) ** 2)).dot(rotations1[i, :, :].T))
-                # Qobs1=block_diag(Qobs1, self.model_Q_obs_s)
-                # d1 = 0.5 * e1.T.dot(Qobs1).dot(e1)
+                # consider center2 as point mass and center1 as ellipsoid obstacle
+                e1 = np.append(centers2[j, :], x[15]) - np.append(centers1[j, :], x[14])
+                Qobs1 = np.linalg.inv(
+                    rotations1[i, :, :].dot(np.diag((sizes1[i, :] / 2) ** 2)).dot(rotations1[i, :, :].T))
+                Qobs1=block_diag(Qobs1, self.model_Q_obs_s)
+                d1 = 0.5 * e1.T.dot(Qobs1).dot(e1)
                 # print('d1_diff=', d1)
-                # if d1 < self.th:
-                #     fobs = np.exp(-d1) - np.exp(-self.th)
-                #     J1, J2 = self.sys.compute_ellipsoid_Jacobian(x, j, i)
-                #     # only use translation jacobian
-                #     J1 = J1[:3]
-                #     J2 = J2[:3]
-                #     de_dx = np.hstack(
-                #         (np.vstack((J1, np.zeros(7))), np.vstack((-J2, np.zeros(7))),
-                #          np.vstack((np.zeros((3, 2)), [1, -1]))))
-                #     dd_dx = de_dx.T.dot(Qobs1).dot(e1)
-                #     Jobs = dd_dx.T.dot(fobs + np.exp(-self.th))
-                # else:
-                #     fobs = 0
-                #     Jobs = np.zeros((self.Dx))
-                # self.Lx += (2 * self.qobs / (1 - np.exp(-self.th)) ** 2) * Jobs.T.dot(fobs)
-                # self.Lxx += (2 * self.qobs / (1 - np.exp(-self.th)) ** 2) * Jobs.T.dot(Jobs)
+                if d1 < self.th:
+                    fobs = np.exp(-d1) - np.exp(-self.th)
+                    J1, J2 = self.sys.compute_ellipsoid_Jacobian(x, j, i)
+                    # only use translation jacobian
+                    J1 = J1[:3]
+                    J2 = J2[:3]
+                    de_dx = np.hstack(
+                        (np.vstack((J1, np.zeros(7))), np.vstack((-J2, np.zeros(7))),
+                         np.vstack((np.zeros((3, 2)), [1, -1]))))
+                    dd_dx = de_dx.T.dot(Qobs1).dot(e1)
+                    Jobs = dd_dx.T.dot(fobs + np.exp(-self.th))
+                else:
+                    fobs = 0
+                    Jobs = np.zeros((self.Dx))
+                self.Lx += (2 * self.qobs / (1 - np.exp(-self.th)) ** 2) * Jobs.T.dot(fobs)
+                self.Lxx += (2 * self.qobs / (1 - np.exp(-self.th)) ** 2) * Jobs.T.dot(Jobs)
 
                 self.Lu = np.zeros((self.Du))
                 self.Luu = np.zeros((self.Du, self.Du))
