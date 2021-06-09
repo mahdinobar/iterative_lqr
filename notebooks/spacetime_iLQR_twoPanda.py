@@ -29,7 +29,7 @@ p.loadURDF('plane.urdf')
 
 robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 robot1_base_pose=[0, 0, 0]
-robot2_base_pose=[0, 0.7, 0]
+robot2_base_pose=[0, 0.05, 0]
 robot1_id = p.loadURDF(robot_urdf, basePosition=robot1_base_pose, useFixedBase=1)
 robot2_id = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, useFixedBase=1)
 p_target_1 = np.array([.6, .7, .5])
@@ -97,12 +97,12 @@ Q_q1=1e-3
 Q_q2=1e-3
 Q = np.diag(np.concatenate((Q_q1*np.ones(7),Q_q2*np.ones(7),[0, 0])))
 QT_s1=1e0
-QT_s2=1e0
+QT_s2=1e-1
 Qf = np.diag(np.concatenate((np.zeros(14),[QT_s1, QT_s2])))
 
 W = np.zeros((6,6))
-WT_p1=1e4
-WT_p2=1e4
+WT_p1=0e4
+WT_p2=0e4
 WT = np.diag(np.concatenate((WT_p1*np.ones(3),WT_p2*np.ones(3))))
 Wvia=WT
 
@@ -114,11 +114,11 @@ Rfactor_ds1=1e0
 Rfactor_ds2=1e0
 R = np.diag(np.concatenate((Rfactor_dq1*np.array([1,1,1,1,1,1,1]),Rfactor_dq2**np.array([1,1,1,1,1]),Rfactor_dq2_j6**np.array([1]),Rfactor_dq2**np.array([1]),[Rfactor_ds1,Rfactor_ds2])))
 
-qobs=1e0
+qobs=1e2
 obs_thresh=1
-model_Q_obs_x=1e0
 model_Q_obs_s=1e0
-Qobs=np.diag(np.concatenate((model_Q_obs_x*np.ones(3),[model_Q_obs_s])))
+# model_Q_obs_x=1e0
+# Qobs=np.diag(np.concatenate((model_Q_obs_x*np.ones(3),[model_Q_obs_s])))
 
 s1_ref=10
 s2_ref=10
