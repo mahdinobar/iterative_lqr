@@ -254,9 +254,9 @@ class URDFRobot_spacetime_dual():
                           [.02,.02,.1],
                           [.02,.02,.1]])
         rotations1 = np.zeros((p.getNumJoints(self.robot1_id), 3, 3))
-        centers2 = centers1
+        centers2 = np.zeros((p.getNumJoints(self.robot1_id),3))
         sizes2 = sizes1
-        rotations2 = rotations1
+        rotations2 = np.zeros((p.getNumJoints(self.robot1_id), 3, 3))
         # scipy: quat: (x, y, z, w)
         # pybullet: quat: [x,y,z,w]
         for i in range(p.getNumJoints(self.robot1_id)):

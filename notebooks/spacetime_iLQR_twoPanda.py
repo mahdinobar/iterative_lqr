@@ -28,8 +28,10 @@ p.resetSimulation()
 p.loadURDF('plane.urdf')
 
 robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
-robot1_id = p.loadURDF(robot_urdf, basePosition=[0., 0.0, 0.], useFixedBase=1)
-robot2_id = p.loadURDF(robot_urdf, basePosition=[0., 0.7, 0.], useFixedBase=1)
+robot1_base_pose=[0, 0, 0]
+robot2_base_pose=[0, 0.7, 0]
+robot1_id = p.loadURDF(robot_urdf, basePosition=robot1_base_pose, useFixedBase=1)
+robot2_id = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, useFixedBase=1)
 p_target_1 = np.array([.6, .7, .5])
 p_target_2 = np.array([.6, .0, .5])
 joint_limits = get_joint_limits(robot1_id, 7)
@@ -56,7 +58,7 @@ dof = 7
 sys = URDFRobot_spacetime_dual(dof=dof, robot1_id=robot1_id, robot2_id=robot2_id, dt=dt)
 
 # # Set the initial state
-# comment for warm start
+# # comment for warm start
 # q0_1 = np.array([0., 0., 0., 0., 0., 0., 0.])
 # q0_2 = np.array([0., 0., 0., 0., 0., 0., 0.])
 # x0 = np.concatenate([q0_1, q0_1, np.zeros(2)])
@@ -71,7 +73,7 @@ sys.set_init_state(x0)
 #### Set initial control output
 # set initial control output to be all zeros
 # add epsilon offset to avoid barrier
-# comment for warm start
+# # comment for warm start
 # us = np.hstack((np.zeros((T + 1, sys.Du-2)),1e-3*np.ones((T + 1, 2))))
 # _ = sys.compute_matrices(x=None, u=us[0])
 # xs = sys.rollout(us[:-1])
@@ -112,7 +114,7 @@ Rfactor_ds1=1e0
 Rfactor_ds2=1e0
 R = np.diag(np.concatenate((Rfactor_dq1*np.array([1,1,1,1,1,1,1]),Rfactor_dq2**np.array([1,1,1,1,1]),Rfactor_dq2_j6**np.array([1]),Rfactor_dq2**np.array([1]),[Rfactor_ds1,Rfactor_ds2])))
 
-qobs=1
+qobs=1e0
 obs_thresh=1
 model_Q_obs_x=1e0
 model_Q_obs_s=1e0
@@ -201,8 +203,8 @@ p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.resetSimulation()
 p.loadURDF('plane.urdf')
 robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
-robot1_id = p.loadURDF(robot_urdf, basePosition=[0., 0.0, 0.], useFixedBase=1)
-robot2_id = p.loadURDF(robot_urdf, basePosition=[0., 0.7, 0.], useFixedBase=1)
+robot1_id = p.loadURDF(robot_urdf, basePosition=robot1_base_pose, useFixedBase=1)
+robot2_id = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, useFixedBase=1)
 p_target_1 = np.array([.6, .7, .5])
 p_target_2 = np.array([.6, .0, .5])
 # Create a ball to show the target
