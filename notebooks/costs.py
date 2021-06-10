@@ -393,7 +393,7 @@ class CostModelObstacle_ellipsoids_exp4():
                 else:
                     fobs = 0
                 self.L += self.qobs / (1 - np.exp(-self.th)) ** 2 * fobs ** 2
-         #print('{}={}'.format(type(self).__name__, self.L))
+        # print('{}={}'.format(type(self).__name__, self.L))
         return self.L
 
     def calcDiff(self, x, u):

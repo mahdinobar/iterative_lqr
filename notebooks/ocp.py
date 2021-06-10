@@ -156,7 +156,7 @@ class ILQR():
             LBu=[]
             for i in range(self.T+1):
                 self.Qs[self.Dx*i:self.Dx*(i+1),self.Dx*i:self.Dx*(i+1)] = self.Lxx[i]
-                if i ==self.T:
+                if np.any(np.array(self.us)[i, 14:] <= 0) or i == self.T:
                     LBuu = self.Kapa * np.diag((np.zeros(16)))
                     LBu = np.append(LBu, (np.zeros(16)))
                 else:
@@ -192,9 +192,9 @@ class ILQR():
         for i in range(n_iter):
             print('**********************************iteration=',i)
 
-            epsilon_kapa = 1e-3
+            epsilon_kapa = 1e-2
             mio_kapa = 0.1
-            self.Kapa = 1e-2
+            self.Kapa = 1e-1
             # for Barrier internal method
             while self.Kapa >= epsilon_kapa:
                 print('§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§self.Kapa=', self.Kapa)
