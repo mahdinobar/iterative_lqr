@@ -70,10 +70,10 @@ x0=xs[0,:]
 
 sys.set_init_state(x0)
 
-#### Set initial control output
-# set initial control output to be all zeros
-# add epsilon offset to avoid barrier
-# # comment for warm start
+# ### Set initial control output
+# # set initial control output to be all zeros
+# # add epsilon offset to avoid barrier
+# # # comment for warm start
 # us = np.hstack((np.zeros((T + 1, sys.Du-2)),1e-3*np.ones((T + 1, 2))))
 # _ = sys.compute_matrices(x=None, u=us[0])
 # xs = sys.rollout(us[:-1])
@@ -114,9 +114,9 @@ Rfactor_ds1=1e-1
 Rfactor_ds2=1e-1
 R = np.diag(np.concatenate((Rfactor_dq1*np.array([1,1,1,1,1,1,1]),Rfactor_dq2**np.array([1,1,1,1,1]),Rfactor_dq2_j6**np.array([1]),Rfactor_dq2**np.array([1]),[Rfactor_ds1,Rfactor_ds2])))
 
-qobs=1e2
+qobs=1e3
 obs_thresh=2
-model_Q_obs_s=1e2 # 100 is at the order corrosponding hyper-ellipsoid size 0.1 m
+model_Q_obs_s=1e1 # 100 is at the order corrosponding hyper-ellipsoid size 0.1 m
 # model_Q_obs_x=1e0
 # Qobs=np.diag(np.concatenate((model_Q_obs_x*np.ones(3),[model_Q_obs_s])))
 

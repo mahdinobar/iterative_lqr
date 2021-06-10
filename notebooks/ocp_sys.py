@@ -237,13 +237,13 @@ class URDFRobot_spacetime_dual():
         quat1 = np.array(ee1_data[1])
         pos2 = np.array(ee2_data[0])
         quat2 = np.array(ee2_data[1])
-        print("++++++",np.linalg.norm(pos1 - pos2))
+        # print("++++++",np.linalg.norm(pos1 - pos2))
         return pos1, quat1, pos2, quat2
 
     def compute_elipsoids(self, x, ee_id=None):
         self.set_q(x)
         centers1 = np.zeros((p.getNumJoints(self.robot1_id),3))
-        sizes1 = np.array([[.2,.2,.1],
+        sizes1 = 2*np.array([[.2,.2,.1],
                           [.1,.2,.2],
                           [.1,.2,.2],
                           [.2,.1,.2],
@@ -252,8 +252,8 @@ class URDFRobot_spacetime_dual():
                           [.1,.1,.2],
                           [.1,.1,.1],
                           [.1,.2,.1],
-                          [.02,.02,.1],
-                          [.02,.02,.1]])
+                          [.05,.05,.1],
+                          [.05,.05,.1]])
         rotations1 = np.zeros((p.getNumJoints(self.robot1_id), 3, 3))
         centers2 = np.zeros((p.getNumJoints(self.robot1_id),3))
         sizes2 = sizes1
@@ -311,7 +311,6 @@ class URDFRobot_spacetime_dual():
     def set_q(self, x):
         q1 = x[:self.dof]
         q2 = x[self.dof:self.dof*2]
-        print("++++++q+++",np.linalg.norm(q1 - q2))
         for i in range(self.dof):
             p.resetJointState(self.robot1_id, self.joint_indices[i], q1[i])
             p.resetJointState(self.robot2_id, self.joint_indices[i], q2[i])
