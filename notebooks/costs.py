@@ -25,7 +25,7 @@ class CostModelQuadratic():
     
     def calc(self, x, u):
         self.L = 0.5*(x-self.x_ref).T.dot(self.Q).dot(x-self.x_ref) + 0.5*(u-self.u_ref).T.dot(self.R).dot(u-self.u_ref)
-        print('{}={}'.format(type(self).__name__, self.L))
+         #print('{}={}'.format(type(self).__name__, self.L))
         return self.L
 
     def calcDiff(self, x, u):
@@ -166,7 +166,7 @@ class CostModelQuadraticTranslation_dual():
     def calc(self, x, u):
         p1, _, p2, _ = self.sys.compute_ee(x, self.ee_id)
         self.L = 0.5 * (np.append(p1,p2) - np.append(self.p_target_1,self.p_target_2)).T.dot(self.W).dot(np.append(p1,p2) - np.append(self.p_target_1,self.p_target_2))
-        print('{}={}'.format(type(self).__name__, self.L))
+         #print('{}={}'.format(type(self).__name__, self.L))
         return self.L
 
     def calcDiff(self, x, u):
@@ -393,7 +393,7 @@ class CostModelObstacle_ellipsoids_exp4():
                 else:
                     fobs = 0
                 self.L += self.qobs / (1 - np.exp(-self.th)) ** 2 * fobs ** 2
-        print('{}={}'.format(type(self).__name__, self.L))
+         #print('{}={}'.format(type(self).__name__, self.L))
         return self.L
 
     def calcDiff(self, x, u):

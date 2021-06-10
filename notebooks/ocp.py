@@ -123,12 +123,12 @@ class ILQR():
             alpha *= fac
             n_iter += 1
 
-        if n_iter == max_iter :
-            raise ValueError('Cannot find a good direction')
+            if n_iter == max_iter:
+                raise ValueError('Cannot find a good direction')
+
         self.xs, self.us = np.array(xs_new), np.array(us_new)
         
-        dcost = np.abs(cost0 - cost) #decrease in the cost
-        return dcost
+        return
     
     def backward_pass(self, method = 'batch'):
         if method == 'recursive':
@@ -190,13 +190,14 @@ class ILQR():
     def solve(self, n_iter = 3, method = 'batch', verbose = False, cost_thres = 1e-5, threshold_alpha=1e-5):
         self.threshold_alpha=threshold_alpha
         for i in range(n_iter):
-            print('***********iteration=',i)
+            print('**********************************iteration=',i)
 
             epsilon_kapa = 1e-3
             mio_kapa = 0.1
             self.Kapa = 1e-2
             # for Barrier internal method
             while self.Kapa >= epsilon_kapa:
+                print('§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§self.Kapa=', self.Kapa)
                 self.calc_diff()
 
                 self.backward_pass(method=method)
