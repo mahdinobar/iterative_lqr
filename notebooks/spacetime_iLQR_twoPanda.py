@@ -29,7 +29,7 @@ p.loadURDF('plane.urdf')
 
 robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 robot1_base_pose=[0, 0, 0]
-robot2_base_pose=[0, 0.05, 0]
+robot2_base_pose=[0, 0.7, 0]
 robot1_id = p.loadURDF(robot_urdf, basePosition=robot1_base_pose, useFixedBase=1)
 robot2_id = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, useFixedBase=1)
 p_target_1 = np.array([.6, .7, .5])
@@ -101,8 +101,8 @@ QT_s2=1e0
 Qf = np.diag(np.concatenate((np.zeros(14),[QT_s1, QT_s2])))
 
 W = np.zeros((6,6))
-WT_p1=0e4
-WT_p2=0e4
+WT_p1=1e4
+WT_p2=1e4
 WT = np.diag(np.concatenate((WT_p1*np.ones(3),WT_p2*np.ones(3))))
 Wvia=WT
 
@@ -115,7 +115,7 @@ Rfactor_ds2=1e-1
 R = np.diag(np.concatenate((Rfactor_dq1*np.array([1,1,1,1,1,1,1]),Rfactor_dq2**np.array([1,1,1,1,1]),Rfactor_dq2_j6**np.array([1]),Rfactor_dq2**np.array([1]),[Rfactor_ds1,Rfactor_ds2])))
 
 qobs=1e2
-obs_thresh=1
+obs_thresh=2
 model_Q_obs_s=1e2 # 100 is at the order corrosponding hyper-ellipsoid size 0.1 m
 # model_Q_obs_x=1e0
 # Qobs=np.diag(np.concatenate((model_Q_obs_x*np.ones(3),[model_Q_obs_s])))
@@ -161,7 +161,7 @@ for i in range(T):
     obstAvoidCost = CostModelObstacle_ellipsoids_exp4(sys, ee_id=link_id, qobs=qobs, th=obs_thresh, model_Q_obs_s=model_Q_obs_s)
     runningCost = CostModelSum(sys, [runningStateCost, runningControlCost, runningEECost, obstAvoidCost])
     costs += [runningCost]
-terminalStateCost = CostModelQuadratic(sys, Q=Qf)
+terminalStateCost = CostModelQuadratic(sys, Q=Qf, x_ref=x_ref)
 terminalControlCost = CostModelQuadratic(sys, R=R)
 terminalEECost = CostModelQuadraticTranslation_dual(sys, W=WT, ee_id=link_id, p_target_1=p_target_1, p_target_2=p_target_2)
 # obstAvoidCost = CostModelObstacle_exp4(sys, ee_id=link_id, qobs=qobs, Qobs=Qobs, th=obs_thresh)
@@ -215,6 +215,10 @@ p.resetBasePositionAndOrientation(ballId2, p_target_2, (0, 0, 0, 1))
 
 
 sys.vis_traj(xs_interp, vis_dt=0.1)
+
+# for i in range(21):
+#     print(i)
+#     sys.compute_ee(ilqr_cost.xs[i,:], link_id)
 
 # # #### Compute Error
 pos1, _, pos2, _ = sys.compute_ee(ilqr_cost.xs[-1], link_id)

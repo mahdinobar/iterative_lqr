@@ -367,14 +367,14 @@ class CostModelObstacle_ellipsoids_exp4():
         # todo better coding
         centers1, sizes1, rotations1, centers2, sizes2, rotations2 = self.sys.compute_elipsoids(x)
         self.L = 0
-        for i in range(2,11):
-            for j in range(2,11):
+        for i in range(8,9):
+            for j in range(8,9):
                 # consider center1 as point mass and center2 as ellipsoid obstacle
                 e2= np.append(centers1[i, :],x[14])-np.append(centers2[j, :],x[15])
                 Qobs2 = np.linalg.inv(rotations2[j, :, :].dot(np.diag((sizes2[j, :]/2)**2)).dot(rotations2[j, :, :].T))
                 Qobs2=block_diag(Qobs2, self.model_Q_obs_s)
                 d2 = 0.5 * e2.T.dot(Qobs2).dot(e2)
-                # print('d2=', d2)
+                print('(i, j, d2)=({},{},{})'.format(i,j,d2))
                 if d2<self.th:
                     fobs=np.exp(-d2)-np.exp(-self.th)
                 else:
@@ -401,8 +401,8 @@ class CostModelObstacle_ellipsoids_exp4():
         centers1, sizes1, rotations1, centers2, sizes2, rotations2 = self.sys.compute_elipsoids(x)
         self.Lx = np.zeros((x.shape[0]))
         self.Lxx = np.zeros((x.shape[0], x.shape[0]))
-        for i in range(2,11):
-            for j in range(2,11):
+        for i in range(8,9):
+            for j in range(8,9):
                 # consider center1 as point mass and center2 as ellipsoid obstacle
                 e2 = np.append(centers1[i, :], x[14]) - np.append(centers2[j, :], x[15])
                 Qobs2 = np.linalg.inv(

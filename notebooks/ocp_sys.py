@@ -237,6 +237,7 @@ class URDFRobot_spacetime_dual():
         quat1 = np.array(ee1_data[1])
         pos2 = np.array(ee2_data[0])
         quat2 = np.array(ee2_data[1])
+        print("++++++",np.linalg.norm(pos1 - pos2))
         return pos1, quat1, pos2, quat2
 
     def compute_elipsoids(self, x, ee_id=None):
@@ -310,6 +311,7 @@ class URDFRobot_spacetime_dual():
     def set_q(self, x):
         q1 = x[:self.dof]
         q2 = x[self.dof:self.dof*2]
+        print("++++++q+++",np.linalg.norm(q1 - q2))
         for i in range(self.dof):
             p.resetJointState(self.robot1_id, self.joint_indices[i], q1[i])
             p.resetJointState(self.robot2_id, self.joint_indices[i], q2[i])
