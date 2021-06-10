@@ -32,8 +32,8 @@ robot1_base_pose=[0, 0, 0]
 robot2_base_pose=[0, 0.7, 0]
 robot1_id = p.loadURDF(robot_urdf, basePosition=robot1_base_pose, useFixedBase=1)
 robot2_id = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, useFixedBase=1)
-p_target_1 = np.array([.6, 0, .5])
-p_target_2 = np.array([.6, 0, .5])
+p_target_1 = np.array([.6, .5, .5])
+p_target_2 = np.array([.6, .2, .5])
 joint_limits = get_joint_limits(robot1_id, 7)
 
 # Define the end-effector
@@ -51,7 +51,7 @@ for i in range(p.getNumJoints(robot1_id)):
 # getLinkState
 
 # Construct the robot system
-n_iter = 5
+n_iter = 10
 T = 20 # number of data points
 dt = 0.5
 dof = 7
@@ -106,17 +106,17 @@ WT_p2=1e4
 WT = np.diag(np.concatenate((WT_p1*np.ones(3),WT_p2*np.ones(3))))
 Wvia=WT
 
-Rfactor_dq1=1e-1
+Rfactor_dq1=1e-2
 Rfactor_dq2=1e-1
 Rfactor_dq2_j6=1e-1
 
-Rfactor_ds1=1e-1
-Rfactor_ds2=1e-1
+Rfactor_ds1=1e0
+Rfactor_ds2=1e0
 R = np.diag(np.concatenate((Rfactor_dq1*np.array([1,1,1,1,1,1,1]),Rfactor_dq2**np.array([1,1,1,1,1]),Rfactor_dq2_j6**np.array([1]),Rfactor_dq2**np.array([1]),[Rfactor_ds1,Rfactor_ds2])))
 
 qobs=1e3
-obs_thresh=2
-model_Q_obs_s=1e0 # 100 is at the order corrosponding hyper-ellipsoid size 0.1 m
+obs_thresh=1.
+model_Q_obs_s=1e1 # 100 is at the order corrosponding hyper-ellipsoid size 0.1 m
 # model_Q_obs_x=1e0
 # Qobs=np.diag(np.concatenate((model_Q_obs_x*np.ones(3),[model_Q_obs_s])))
 
@@ -224,5 +224,5 @@ pos1, _, pos2, _ = sys.compute_ee(ilqr_cost.xs[-1], link_id)
 print('pos1-p_target_1={}, pos2-p_target_2={}'.format(pos1-p_target_1, pos2-p_target_2))
 
 # # # uncomment to save warm start traj
-# np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0.npy",ilqr_cost.xs)
-# np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0.npy",ilqr_cost.us)
+# np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0_3.npy",ilqr_cost.xs)
+# np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0_3.npy",ilqr_cost.us)

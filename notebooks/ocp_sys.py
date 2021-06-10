@@ -243,7 +243,7 @@ class URDFRobot_spacetime_dual():
     def compute_elipsoids(self, x, ee_id=None):
         self.set_q(x)
         centers1 = np.zeros((p.getNumJoints(self.robot1_id),3))
-        sizes1 = 2*np.array([[.2,.2,.1],
+        sizes1 = np.array([[.2,.2,.1],
                           [.1,.2,.2],
                           [.1,.2,.2],
                           [.2,.1,.2],
