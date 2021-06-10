@@ -97,7 +97,7 @@ Q_q1=1e-3
 Q_q2=1e-3
 Q = np.diag(np.concatenate((Q_q1*np.ones(7),Q_q2*np.ones(7),[0, 0])))
 QT_s1=1e0
-QT_s2=1e-1
+QT_s2=1e0
 Qf = np.diag(np.concatenate((np.zeros(14),[QT_s1, QT_s2])))
 
 W = np.zeros((6,6))
@@ -110,13 +110,13 @@ Rfactor_dq1=1e-1
 Rfactor_dq2=1e-1
 Rfactor_dq2_j6=1e-1
 
-Rfactor_ds1=1e0
-Rfactor_ds2=1e0
+Rfactor_ds1=1e-1
+Rfactor_ds2=1e-1
 R = np.diag(np.concatenate((Rfactor_dq1*np.array([1,1,1,1,1,1,1]),Rfactor_dq2**np.array([1,1,1,1,1]),Rfactor_dq2_j6**np.array([1]),Rfactor_dq2**np.array([1]),[Rfactor_ds1,Rfactor_ds2])))
 
 qobs=1e2
 obs_thresh=1
-model_Q_obs_s=1e0
+model_Q_obs_s=1e2 # 100 is at the order corrosponding hyper-ellipsoid size 0.1 m
 # model_Q_obs_x=1e0
 # Qobs=np.diag(np.concatenate((model_Q_obs_x*np.ones(3),[model_Q_obs_s])))
 
