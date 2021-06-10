@@ -32,8 +32,8 @@ robot1_base_pose=[0, 0, 0]
 robot2_base_pose=[0, 0.7, 0]
 robot1_id = p.loadURDF(robot_urdf, basePosition=robot1_base_pose, useFixedBase=1)
 robot2_id = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, useFixedBase=1)
-p_target_1 = np.array([.6, .5, .5])
-p_target_2 = np.array([.6, .2, .5])
+p_target_1 = np.array([.6, 0, .5])
+p_target_2 = np.array([.6, 0, .5])
 joint_limits = get_joint_limits(robot1_id, 7)
 
 # Define the end-effector
