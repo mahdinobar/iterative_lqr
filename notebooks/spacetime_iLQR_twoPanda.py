@@ -34,7 +34,7 @@ robot1_id = p.loadURDF(robot_urdf, basePosition=robot1_base_pose, useFixedBase=1
 robot2_id = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, useFixedBase=1)
 p_target_1 = np.array([.7, .1, .5])
 p_target_2 = np.array([.7, .3, .5])
-ViaPnts1=np.array([[.4, .4, .5]])
+ViaPnts1=np.array([[.5, .4, .5]])
 ViaPnts2=np.array([])
 joint_limits = get_joint_limits(robot1_id, 7)
 
@@ -53,7 +53,7 @@ for i in range(p.getNumJoints(robot1_id)):
 # getLinkState
 
 # Construct the robot system
-n_iter = 20
+n_iter = 15
 T = 20 # number of data points
 dt = 0.5
 dof = 7
@@ -111,16 +111,16 @@ Wvia_p1=1e4
 Wvia_p2=0
 Wvia = np.diag(np.concatenate((WT_p1*np.ones(3),WT_p2*np.ones(3))))
 
-Rfactor_dq1=5e-1
-Rfactor_dq2=5e-1
-Rfactor_dq2_j6=5e-1
+Rfactor_dq1=1e0
+Rfactor_dq2=2e0
+Rfactor_dq2_j6=2e0
 
 Rfactor_ds1=1e0
 Rfactor_ds2=1e0
 R = np.diag(np.concatenate((Rfactor_dq1*np.array([1,1,1,1,1,1,1]),Rfactor_dq2**np.array([1,1,1,1,1]),Rfactor_dq2_j6**np.array([1]),Rfactor_dq2**np.array([1]),[Rfactor_ds1,Rfactor_ds2])))
 
 qobs=1e3
-obs_thresh=1.
+obs_thresh=2.
 model_Q_obs_s=1e1 # 100 is at the order corrosponding hyper-ellipsoid size 0.1 m
 # model_Q_obs_x=1e0
 # Qobs=np.diag(np.concatenate((model_Q_obs_x*np.ones(3),[model_Q_obs_s])))
