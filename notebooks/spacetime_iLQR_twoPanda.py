@@ -34,7 +34,7 @@ robot1_id = p.loadURDF(robot_urdf, basePosition=robot1_base_pose, useFixedBase=1
 robot2_id = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, useFixedBase=1)
 p_target_1 = np.array([.7, .1, .5])
 p_target_2 = np.array([.7, .3, .5])
-ViaPnts1=np.array([[.5, .4, .5]])
+ViaPnts1=np.array([[.5, .5, .5]])
 ViaPnts2=np.array([])
 joint_limits = get_joint_limits(robot1_id, 7)
 
