@@ -231,5 +231,5 @@ pos1, _, pos2, _ = sys.compute_ee(ilqr_cost.xs[-1], link_id)
 print('pos1-p_target_1={}, pos2-p_target_2={}'.format(pos1-p_target_1, pos2-p_target_2))
 
 # # uncomment to save warm start traj
-np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0_3.npy",ilqr_cost.xs)
-np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0_3.npy",ilqr_cost.us)
+np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0_tailor.npy",ilqr_cost.xs)
+np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0_tailor.npy",ilqr_cost.us)
