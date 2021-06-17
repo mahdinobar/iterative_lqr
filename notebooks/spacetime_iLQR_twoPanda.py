@@ -53,8 +53,8 @@ for i in range(p.getNumJoints(robot1_id)):
 # getLinkState
 
 # Construct the robot system
-n_iter = 15
-T = 20 # number of data points
+n_iter = 10
+T = 40 # number of data points
 dt = 0.5
 dof = 7
 sys = URDFRobot_spacetime_dual(dof=dof, robot1_id=robot1_id, robot2_id=robot2_id, dt=dt)
@@ -121,7 +121,7 @@ R = np.diag(np.concatenate((Rfactor_dq1*np.array([1,1,1,1,1,1,1]),Rfactor_dq2**n
 
 qobs=1e3
 obs_thresh=1.
-model_Q_obs_s=0.5e0 
+model_Q_obs_s=1e0
 # model_Q_obs_x=1e0
 # Qobs=np.diag(np.concatenate((model_Q_obs_x*np.ones(3),[model_Q_obs_s])))
 
