@@ -53,7 +53,7 @@ for i in range(p.getNumJoints(robot1_id)):
 # getLinkState
 
 # Construct the robot system
-n_iter = 10
+n_iter = 15
 T = 20 # number of data points
 dt = 0.5
 dof = 7
@@ -120,8 +120,8 @@ Rfactor_ds2=1e0
 R = np.diag(np.concatenate((Rfactor_dq1*np.array([1,1,1,1,1,1,1]),Rfactor_dq2**np.array([1,1,1,1,1]),Rfactor_dq2_j6**np.array([1]),Rfactor_dq2**np.array([1]),[Rfactor_ds1,Rfactor_ds2])))
 
 qobs=1e3
-obs_thresh=2.
-model_Q_obs_s=1e2 # 100 is at the order corrosponding hyper-ellipsoid size 0.1 m
+obs_thresh=1.
+model_Q_obs_s=0.5e0 
 # model_Q_obs_x=1e0
 # Qobs=np.diag(np.concatenate((model_Q_obs_x*np.ones(3),[model_Q_obs_s])))
 
@@ -202,28 +202,6 @@ for i in range(dof):
 # # unocmment to record only final traj
 p.disconnect()
 physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/test.mp4\" --mp4fps=10")  # pybullet with visualisation and recording
-p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-30, cameraTargetPosition=[0,0.5,0])
-p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
-p.setAdditionalSearchPath(pybullet_data.getDataPath())
-p.resetSimulation()
-p.loadURDF('plane.urdf')
-robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
-robot1_id = p.loadURDF(robot_urdf, basePosition=robot1_base_pose, useFixedBase=1)
-robot2_id = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, useFixedBase=1)
-# Create a ball to show the target
-_, _, ballId1 = create_primitives(radius=0.05, rgbaColor=[1, 0, 0, 1])
-_, _, ballId2 = create_primitives(radius=0.05, rgbaColor=[0, 0, 1, 1])
-p.resetBasePositionAndOrientation(ballId1, p_target_1, (0, 0, 0, 1))
-p.resetBasePositionAndOrientation(ballId2, p_target_2, (0, 0, 0, 1))
-
-_, _, ballId1_middle = create_primitives(radius=0.05, rgbaColor=[1, 0, 0, 1])
-p.resetBasePositionAndOrientation(ballId1_middle, ViaPnts1[0], (0, 0, 0, 1))
-
-sys.vis_traj(ilqr_cost.xs, vis_dt=0.1)
-
-clear_output()
-p.disconnect()
-physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/test_interp.mp4\" --mp4fps=10")  # pybullet with visualisation and recording
 p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-30, cameraTargetPosition=[0,0.5,0])
 p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())

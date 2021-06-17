@@ -360,7 +360,7 @@ class CostModelObstacle_ellipsoids_exp4():
         self.Dx, self.Du = sys.Dx, sys.Du
         self.ee_id = ee_id
         self.qobs, self.th = qobs, th
-        self.model_Q_obs_s = model_Q_obs_s
+        self.model_Q_obs_s = 1/model_Q_obs_s
         # self.Qobs1 = np.zeros((self.sys.robot1_id, 3, 3))
 
     def calc(self, x, u):
