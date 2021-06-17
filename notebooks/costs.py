@@ -366,6 +366,12 @@ class CostModelObstacle_ellipsoids_exp4():
     def calc(self, x, u):
         # todo better coding
         centers1, sizes1, rotations1, centers2, sizes2, rotations2 = self.sys.compute_elipsoids(x)
+        # nbVis = 20
+        # centers1_interp = np.zeros((nbVis, centers1.shape[0]))
+        # tt = np.linspace(0, np.max(x[:, 14:]), nbVis)
+        # for i in range(7):
+        #     centers1_interp[:, i] = np.interp(tt, x[:, 14], centers1[:, i])
+
         self.L = 0
         for i in range(4,11):
             for j in range(4,11):

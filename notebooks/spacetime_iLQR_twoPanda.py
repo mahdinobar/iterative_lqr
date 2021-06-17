@@ -32,8 +32,10 @@ robot1_base_pose=[0, 0, 0]
 robot2_base_pose=[0, 0.7, 0]
 robot1_id = p.loadURDF(robot_urdf, basePosition=robot1_base_pose, useFixedBase=1)
 robot2_id = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, useFixedBase=1)
-p_target_1 = np.array([.6, .5, .5])
+p_target_1 = np.array([.6, .1, .5])
 p_target_2 = np.array([.6, .2, .5])
+ViaPnts1=np.array([[.3, .5, .5]])
+ViaPnts2=np.array([])
 joint_limits = get_joint_limits(robot1_id, 7)
 
 # Define the end-effector
@@ -51,32 +53,32 @@ for i in range(p.getNumJoints(robot1_id)):
 # getLinkState
 
 # Construct the robot system
-n_iter = 10
+n_iter = 20
 T = 20 # number of data points
 dt = 0.5
 dof = 7
 sys = URDFRobot_spacetime_dual(dof=dof, robot1_id=robot1_id, robot2_id=robot2_id, dt=dt)
 
-# # Set the initial state
-# # comment for warm start
-# q0_1 = np.array([0., 0., 0., 0., 0., 0., 0.])
-# q0_2 = np.array([0., 0., 0., 0., 0., 0., 0.])
-# x0 = np.concatenate([q0_1, q0_1, np.zeros(2)])
+# Set the initial state
+# comment for warm start
+q0_1 = np.array([0., 0., 0., 0., 0., 0., 0.])
+q0_2 = np.array([0., 0., 0., 0., 0., 0., 0.])
+x0 = np.concatenate([q0_1, q0_1, np.zeros(2)])
 
-# uncomment to warm start traj
-us=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0.npy")
-xs=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0.npy")
-x0=xs[0,:]
+# # uncomment to warm start traj
+# us=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0.npy")
+# xs=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0.npy")
+# x0=xs[0,:]
 
 sys.set_init_state(x0)
 
-# ### Set initial control output
-# # set initial control output to be all zeros
-# # add epsilon offset to avoid barrier
-# # # comment for warm start
-# us = np.hstack((np.zeros((T + 1, sys.Du-2)),1e-3*np.ones((T + 1, 2))))
-# _ = sys.compute_matrices(x=None, u=us[0])
-# xs = sys.rollout(us[:-1])
+### Set initial control output
+# set initial control output to be all zeros
+# add epsilon offset to avoid barrier
+# # comment for warm start
+us = np.hstack((np.zeros((T + 1, sys.Du-2)),1e-3*np.ones((T + 1, 2))))
+_ = sys.compute_matrices(x=None, u=us[0])
+xs = sys.rollout(us[:-1])
 
 # #### Try forward kinematics
 pos1_0, quat1_0, pos2_0, quat2_0 = sys.compute_ee(x0, link_id)
@@ -104,9 +106,12 @@ W = np.zeros((6,6))
 WT_p1=1e4
 WT_p2=1e4
 WT = np.diag(np.concatenate((WT_p1*np.ones(3),WT_p2*np.ones(3))))
-Wvia=WT
 
-Rfactor_dq1=1e-2
+Wvia_p1=1e4
+Wvia_p2=0
+Wvia = np.diag(np.concatenate((WT_p1*np.ones(3),WT_p2*np.ones(3))))
+
+Rfactor_dq1=1e-1
 Rfactor_dq2=1e-1
 Rfactor_dq2_j6=1e-1
 
@@ -114,8 +119,8 @@ Rfactor_ds1=1e0
 Rfactor_ds2=1e0
 R = np.diag(np.concatenate((Rfactor_dq1*np.array([1,1,1,1,1,1,1]),Rfactor_dq2**np.array([1,1,1,1,1]),Rfactor_dq2_j6**np.array([1]),Rfactor_dq2**np.array([1]),[Rfactor_ds1,Rfactor_ds2])))
 
-qobs=1e3
-obs_thresh=1.
+qobs=0e3
+obs_thresh=2.
 model_Q_obs_s=1e1 # 100 is at the order corrosponding hyper-ellipsoid size 0.1 m
 # model_Q_obs_x=1e0
 # Qobs=np.diag(np.concatenate((model_Q_obs_x*np.ones(3),[model_Q_obs_s])))
@@ -132,27 +137,27 @@ mu = 1e-6  # regularization coefficient
 # #### Set end effector target
 # W and WT: cost coefficients for the end-effector reaching task
 
-p.resetBasePositionAndOrientation(ballId1, p_target_1, (0, 0, 0, 1))
-p.resetBasePositionAndOrientation(ballId2, p_target_2, (0, 0, 0, 1))
+# p.resetBasePositionAndOrientation(ballId1, p_target_1, (0, 0, 0, 1))
+# p.resetBasePositionAndOrientation(ballId2, p_target_2, (0, 0, 0, 1))
 
 # ### iLQR using cost model
 # #### Define the cost
 # The costs consist of: a) state regularization (Q), b) control regularization (R), and c) End-effector reaching task (W)
 # Running cost is for the time 0 <= t < T, while terminal cost is for the time t = T
 
-ViaPnts1=np.array([])
-ViaPnts2=np.array([])
+# todo check make code robust
 nbViaPnts=np.shape(ViaPnts1)[0]
 idx= np.linspace(1,T,nbViaPnts+2, dtype='int')[1:-1]
 id=0
 costs = []
 for i in range(T):
     # BarrierCost = CostModelBarrier(sys, K=K, x_ref=x_ref)
+    # todo check make code robust
     if any(i == c for c in idx) and nbViaPnts>0:
         runningEECost = CostModelQuadraticTranslation_dual(sys, W=Wvia, ee_id=link_id, p_target_1=ViaPnts1[id],
-                                                           p_target_2=ViaPnts2[id])
+                                                           p_target_2=p_target_2)
         id += 1
-    elif nbViaPnts==0:
+    else:
         runningEECost = CostModelQuadraticTranslation_dual(sys, W=W, ee_id=link_id, p_target_1=p_target_1,
                                                            p_target_2=p_target_2)
     runningStateCost = CostModelQuadratic(sys, Q=Q, x_ref=x_ref)
@@ -211,6 +216,8 @@ _, _, ballId2 = create_primitives(radius=0.05, rgbaColor=[0, 0, 1, 1])
 p.resetBasePositionAndOrientation(ballId1, p_target_1, (0, 0, 0, 1))
 p.resetBasePositionAndOrientation(ballId2, p_target_2, (0, 0, 0, 1))
 
+_, _, ballId1_middle = create_primitives(radius=0.05, rgbaColor=[1, 0, 0, 1])
+p.resetBasePositionAndOrientation(ballId1_middle, ViaPnts1[0], (0, 0, 0, 1))
 
 sys.vis_traj(xs_interp, vis_dt=0.1)
 
