@@ -53,7 +53,7 @@ for i in range(p.getNumJoints(robot1_id)):
 # getLinkState
 
 # Construct the robot system
-n_iter = 20
+n_iter = 25
 T = 20 # number of data points
 dt = 0.5
 dof = 7
