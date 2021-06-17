@@ -33,7 +33,7 @@ robot2_base_pose=[0, 0.7, 0]
 robot1_id = p.loadURDF(robot_urdf, basePosition=robot1_base_pose, useFixedBase=1)
 robot2_id = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, useFixedBase=1)
 p_target_1 = np.array([.7, .1, .5])
-p_target_2 = np.array([.7, .3, .5])
+p_target_2 = np.array([.7, .4, .5])
 ViaPnts1=np.array([[.5, .5, .5]])
 ViaPnts2=np.array([])
 joint_limits = get_joint_limits(robot1_id, 7)
@@ -112,14 +112,14 @@ Wvia_p2=0
 Wvia = np.diag(np.concatenate((WT_p1*np.ones(3),WT_p2*np.ones(3))))
 
 Rfactor_dq1=1e0
-Rfactor_dq2=1e0
-Rfactor_dq2_j6=1e0
+Rfactor_dq2=1e-1
+Rfactor_dq2_j6=1e-1
 
 Rfactor_ds1=1e0
 Rfactor_ds2=1e0
 R = np.diag(np.concatenate((Rfactor_dq1*np.array([1,1,1,1,1,1,1]),Rfactor_dq2**np.array([1,1,1,1,1]),Rfactor_dq2_j6**np.array([1]),Rfactor_dq2**np.array([1]),[Rfactor_ds1,Rfactor_ds2])))
 
-qobs=1e3
+qobs=1e2
 obs_thresh=1.
 model_Q_obs_s=1e0
 # model_Q_obs_x=1e0
@@ -184,25 +184,25 @@ ilqr_cost.set_state(xs, us)  # set initial trajectory
 # todo for batch?
 ilqr_cost.mu = 1e-5
 
-# #### Solve and Plot
-ilqr_cost.solve(n_iter, method='batch', threshold_alpha=1e-6)
-xs_batch, us_batch = ilqr_cost.xs, ilqr_cost.us
-clear_output()
+# # #### Solve and Plot
+# ilqr_cost.solve(n_iter, method='batch', threshold_alpha=1e-6)
+# xs_batch, us_batch = ilqr_cost.xs, ilqr_cost.us
+# clear_output()
+#
+# # #### Play traj
+# # interpolate the virtual time for visualization of both
+# nbVis=50
+# xs_interp=np.zeros((nbVis, ilqr_cost.xs.shape[1]))
+# tt=np.linspace(0,np.max(ilqr_cost.xs[:,14:]), nbVis)
+# for i in range(dof):
+#     xs_interp[:,i] = np.interp(tt, ilqr_cost.xs[:,14],ilqr_cost.xs[:,i])
+#     xs_interp[:,dof+i] = np.interp(tt, ilqr_cost.xs[:, 15], ilqr_cost.xs[:, dof+i])
 
-# #### Play traj
-# interpolate the virtual time for visualization of both
-nbVis=50
-xs_interp=np.zeros((nbVis, ilqr_cost.xs.shape[1]))
-tt=np.linspace(0,np.max(ilqr_cost.xs[:,14:]), nbVis)
-for i in range(dof):
-    xs_interp[:,i] = np.interp(tt, ilqr_cost.xs[:,14],ilqr_cost.xs[:,i])
-    xs_interp[:,dof+i] = np.interp(tt, ilqr_cost.xs[:, 15], ilqr_cost.xs[:, dof+i])
-
-
+xs_interp=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs_interp.npy")
 # # unocmment to record only final traj
 p.disconnect()
 physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/test.mp4\" --mp4fps=10")  # pybullet with visualisation and recording
-p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-30, cameraTargetPosition=[0,0.5,0])
+p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-90, cameraTargetPosition=[0,0.5,0])
 p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.resetSimulation()
@@ -220,7 +220,7 @@ _, _, ballId1_middle = create_primitives(radius=0.05, rgbaColor=[1, 0, 0, 1])
 p.resetBasePositionAndOrientation(ballId1_middle, ViaPnts1[0], (0, 0, 0, 1))
 
 sys.vis_traj(xs_interp, vis_dt=0.1)
-
+# np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs_interp.npy",xs_interp)
 # for i in range(21):
 #     print(i)
 #     sys.compute_ee(ilqr_cost.xs[i,:], link_id)

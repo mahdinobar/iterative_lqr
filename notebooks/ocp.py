@@ -190,7 +190,7 @@ class ILQR():
     def solve(self, n_iter = 3, method = 'batch', verbose = False, cost_thres = 1e-5, threshold_alpha=1e-5):
         self.threshold_alpha=threshold_alpha
         for i in range(n_iter):
-            print('**********************************iteration=',i)
+            print('**********************************iteration=',i+1)
 
             epsilon_kapa = 1e-2
             mio_kapa = 0.1
