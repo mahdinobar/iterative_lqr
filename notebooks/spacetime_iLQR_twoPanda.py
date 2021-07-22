@@ -32,9 +32,9 @@ robot1_base_pose=[0, 0, 0]
 robot2_base_pose=[0, 0.7, 0]
 robot1_id = p.loadURDF(robot_urdf, basePosition=robot1_base_pose, useFixedBase=1)
 robot2_id = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, useFixedBase=1)
-p_target_1 = np.array([.7, .0, .5])
-p_target_2 = np.array([.7, .2, .5])
-ViaPnts1=np.array([[.5, .5, .5]])
+p_target_1 = np.array([.7, 0.0, .5])
+p_target_2 = np.array([.7, 0.2, .5])
+ViaPnts1=np.array([[.4, .6, .5]])
 ViaPnts2=np.array([])
 joint_limits = get_joint_limits(robot1_id, 7)
 
@@ -53,7 +53,7 @@ for i in range(p.getNumJoints(robot1_id)):
 # getLinkState
 
 # Construct the robot system
-n_iter = 7
+n_iter = 10
 T = 40 # number of data points
 dt = 0.5
 dof = 7
@@ -61,13 +61,15 @@ sys = URDFRobot_spacetime_dual(dof=dof, robot1_id=robot1_id, robot2_id=robot2_id
 
 # # Set the initial state
 # # comment for warm start
-# q0_1 = np.array([0., 0., 0., 0., 0., 0., 0.])
-# q0_2 = np.array([0., 0., 0., 0., 0., 0., 0.])
+# # q0_1 = np.array([0., 0., 0., 0., 0., 0., 0.])
+# # q0_2 = np.array([0., 0., 0., 0., 0., 0., 0.])
+# q0_1 = np.array([0.09628129916964914, 0.2069041213575445, -0.3148163748471766, -0.28248525520291473, 0.04714093813300132, 0.5138600262006123, 0.162604552546608])
+# q0_2 = np.array([0.09628129916964914, 0.2069041213575445, -0.3148163748471766, -0.28248525520291473, 0.04714093813300132, 0.5138600262006123, 0.162604552546608])
 # x0 = np.concatenate([q0_1, q0_1, np.zeros(2)])
 
 # uncomment to warm start traj
-us=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0_tailor.npy")
-xs=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0_tailor.npy")
+us=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0_tailor_nonZero.npy")
+xs=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0_tailor_nonZero.npy")
 x0=xs[0,:]
 
 sys.set_init_state(x0)
@@ -185,7 +187,7 @@ ilqr_cost.set_state(xs, us)  # set initial trajectory
 # ilqr_cost.mu = 1e-5
 
 # # #### Solve and Plot
-# ilqr_cost.solve(n_iter, method='batch', threshold_alpha=1e-5)
+ilqr_cost.solve(n_iter, method='batch', threshold_alpha=1e-5)
 # xs_batch, us_batch = ilqr_cost.xs, ilqr_cost.us
 # clear_output()
 #
@@ -201,64 +203,35 @@ ilqr_cost.set_state(xs, us)  # set initial trajectory
 xs_interp=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs_interp.npy")
 # # unocmment to record only final traj
 p.disconnect()
-# physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/test.mp4\" --mp4fps=2")  # pybullet with visualisation and recording
-physicsClient = p.connect(p.GUI)
-p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-90, cameraTargetPosition=[0,0.5,0])
+physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/test.mp4\" --mp4fps=10")  # pybullet with visualisation and recording
+p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-30, cameraTargetPosition=[0,0.5,0])
 p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.resetSimulation()
 p.loadURDF('plane.urdf')
 robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
-# robot1_id = p.loadURDF(robot_urdf, basePosition=robot1_base_pose, useFixedBase=1)
-# robot2_id = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, useFixedBase=1)
-# p.changeVisualShape(robot1_id, 5, rgbaColor=[1,1,1,.5])
+robot1_id = p.loadURDF(robot_urdf, basePosition=robot1_base_pose, useFixedBase=1)
+robot2_id = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, useFixedBase=1)
 # Create a ball to show the target
 _, _, ballId1 = create_primitives(radius=0.05, rgbaColor=[1, 0, 0, 1])
-# _, _, ballId2 = create_primitives(radius=0.05, rgbaColor=[0, 0, 1, 1])
+_, _, ballId2 = create_primitives(radius=0.05, rgbaColor=[0, 0, 1, 1])
 p.resetBasePositionAndOrientation(ballId1, p_target_1, (0, 0, 0, 1))
-# p.resetBasePositionAndOrientation(ballId2, p_target_2, (0, 0, 0, 1))
+p.resetBasePositionAndOrientation(ballId2, p_target_2, (0, 0, 0, 1))
 
-# sys.vis_traj(xs_interp, vis_dt=0.1)
-dof=7
-joint_indices=np.arange(dof)
-vis_dt = .2
-xs_interp=xs_interp[range(0,xs_interp.shape[0],2),:]
-robot1_id=np.zeros(xs_interp.shape[0], dtype='int')
-robot2_id=np.zeros(xs_interp.shape[0], dtype='int')
-min_alpha=0.2
-c=(1-min_alpha)/(xs_interp.shape[0]-1)
-for i, x in enumerate(xs_interp):
-    print('i=',i)
-    robot1_id[i] = p.loadURDF(robot_urdf, basePosition=robot1_base_pose, useFixedBase=1)
-    # print('robot1_id[i]=',robot1_id[i])
-    # for k in range(-1,11):
-    #     p.changeVisualShape(robot1_id[i], k, rgbaColor=[1,1,1, min_alpha+i*c])
-    # robot2_id[i] = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, useFixedBase=1)
-    # p.changeVisualShape(robot2_id[i], 5, rgbaColor=[1,1,1, min_alpha+i*c])
-    # idx_tmp=0
-    # for k in range(i, 0, -1):
-    #     idx_tmp += 1
-    #     p.changeVisualShape(robot2_id[k-1], 5, rgbaColor=[1, 1, 1, 1-idx_tmp*c])
-    clear_output(wait=True)
-    q1 = x[:dof]
-    # q2 = x[dof:dof * 2]
-    for d in range(dof):
-        p.resetJointState(robot1_id[i], joint_indices[d], q1[d])
-        # p.resetJointState(robot2_id[i], joint_indices[d], q2[d])
-        time.sleep(vis_dt)
+_, _, ballId1_middle = create_primitives(radius=0.05, rgbaColor=[1, 0, 0, 1])
+p.resetBasePositionAndOrientation(ballId1_middle, ViaPnts1[0], (0, 0, 0, 1))
 
+sys.vis_traj(xs_interp, vis_dt=0.1)
 # np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs_interp.npy",xs_interp)
-# np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs.npy",ilqr_cost.xs)
-# np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us.npy",ilqr_cost.us)
 # for i in range(21):
 #     print(i)
 #     sys.compute_ee(ilqr_cost.xs[i,:], link_id)
 
 # # #### Compute Error
-# pos1, _, pos2, _ = sys.compute_ee(ilqr_cost.xs[-1], link_id)
-#
-# print('pos1-p_target_1={}, pos2-p_target_2={}'.format(pos1-p_target_1, pos2-p_target_2))
+pos1, _, pos2, _ = sys.compute_ee(ilqr_cost.xs[-1], link_id)
+
+print('pos1-p_target_1={}, pos2-p_target_2={}'.format(pos1-p_target_1, pos2-p_target_2))
 
 # # # uncomment to save warm start traj
-# np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0_tailor.npy",ilqr_cost.xs)
-# np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0_tailor.npy",ilqr_cost.us)
+# np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0_tailor_nonZero.npy",ilqr_cost.xs)
+# np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0_tailor_nonZero.npy",ilqr_cost.us)
