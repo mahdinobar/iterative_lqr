@@ -18,8 +18,8 @@ np.set_printoptions(precision=4, suppress=True)
 
 # #### Setup pybullet with the urdf
 # configure pybullet and load plane.urdf and quadcopter.urdf
-physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
-# physicsClient = p.connect(p.GUI)  # pybullet with visualisation
+# physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
+physicsClient = p.connect(p.GUI)  # pybullet with visualisation
 # physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/test.mp4\" --mp4fps=10")  # pybullet with visualisation and recording
 # p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-30, cameraTargetPosition=[0,0.5,0])
 # p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
@@ -30,8 +30,14 @@ p.loadURDF('plane.urdf')
 robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 robot1_base_pose=[0, 0, 0]
 robot2_base_pose=[0, 0.7, 0]
+# make the target inside positive xy plane
+theta=-np.pi/2
+r = R.from_matrix([[np.cos(theta), -np.sin(theta), 0],
+                   [np.sin(theta), np.cos(theta), 0],
+                   [0, 0, 1]])
+baseOrientation=r.as_quat()
 robot1_id = p.loadURDF(robot_urdf, basePosition=robot1_base_pose, useFixedBase=1)
-robot2_id = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, useFixedBase=1)
+robot2_id = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, baseOrientation=baseOrientation, useFixedBase=1)
 p_target_1 = np.array([.7, 0.0, .5])
 p_target_2 = np.array([.7, 0.2, .5])
 ViaPnts1=np.array([[.4, .6, .5]])
