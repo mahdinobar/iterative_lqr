@@ -18,8 +18,8 @@ np.set_printoptions(precision=4, suppress=True)
 
 # #### Setup pybullet with the urdf
 # configure pybullet and load plane.urdf and quadcopter.urdf
-# physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
-physicsClient = p.connect(p.GUI)  # pybullet with visualisation
+physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
+# physicsClient = p.connect(p.GUI)  # pybullet with visualisation
 # physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/test.mp4\" --mp4fps=10")  # pybullet with visualisation and recording
 # p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-30, cameraTargetPosition=[0,0.5,0])
 # p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
@@ -29,7 +29,7 @@ p.loadURDF('plane.urdf')
 
 robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 robot1_base_pose=[0, 0, 0]
-robot2_base_pose=[0, 0.7, 0]
+robot2_base_pose=[0, 1., 0]
 # make the target inside positive xy plane
 theta=-np.pi/2
 r = R.from_matrix([[np.cos(theta), -np.sin(theta), 0],
@@ -38,9 +38,9 @@ r = R.from_matrix([[np.cos(theta), -np.sin(theta), 0],
 baseOrientation=r.as_quat()
 robot1_id = p.loadURDF(robot_urdf, basePosition=robot1_base_pose, useFixedBase=1)
 robot2_id = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, baseOrientation=baseOrientation, useFixedBase=1)
-p_target_1 = np.array([.7, .0, .5])
-p_target_2 = np.array([.7, .2, .5])
-ViaPnts1=np.array([[.5, .5, .5]])
+p_target_1 = np.array([.4, .2, .6])
+p_target_2 = np.array([.1, .3, .6])
+ViaPnts1=np.array([[.2, .7, .6]])
 ViaPnts2=np.array([])
 joint_limits = get_joint_limits(robot1_id, 7)
 
@@ -59,8 +59,8 @@ for i in range(p.getNumJoints(robot1_id)):
 # getLinkState
 
 # Construct the robot system
-n_iter = 25
-T = 40 # number of data points
+n_iter = 20
+T = 20 # number of data points
 dt = 0.5
 dof = 7
 sys = URDFRobot_spacetime_dual(dof=dof, robot1_id=robot1_id, robot2_id=robot2_id, dt=dt)
@@ -94,14 +94,14 @@ pos1_0, quat1_0, pos2_0, quat2_0 = sys.compute_ee(x0, link_id)
 p.resetBasePositionAndOrientation(ballId1, pos1_0, quat1_0)
 p.resetBasePositionAndOrientation(ballId2, pos2_0, quat2_0)
 
-# #### Plot initial trajectory
-# interpolate the virtual time for visualization of both
-xs_interp=np.zeros(xs.shape)
-tt=np.linspace(0,np.max(xs[:,14:]), T)
-for i in range(dof):
-    xs_interp[:,i] = np.interp(T, xs[:,14],xs[:,i])
-    xs_interp[:,dof+i] = np.interp(T, xs[:, 15], xs[:, dof+i])
-sys.vis_traj(xs_interp)
+# # #### Plot initial trajectory
+# # interpolate the virtual time for visualization of both
+# xs_interp=np.zeros(xs.shape)
+# tt=np.linspace(0,np.max(xs[:,14:]), T)
+# for i in range(dof):
+#     xs_interp[:,i] = np.interp(T, xs[:,14],xs[:,i])
+#     xs_interp[:,dof+i] = np.interp(T, xs[:, 15], xs[:, dof+i])
+# sys.vis_traj(xs_interp)
 # #### Set the regularization cost coefficients Q and R
 Q_q1=1e-3
 Q_q2=1e-3
@@ -111,11 +111,11 @@ QT_s2=1e-1
 Qf = np.diag(np.concatenate((np.zeros(14),[QT_s1, QT_s2])))
 
 W = np.zeros((6,6))
-WT_p1=1e4
-WT_p2=1e4
+WT_p1=1e3
+WT_p2=1e3
 WT = np.diag(np.concatenate((WT_p1*np.ones(3),WT_p2*np.ones(3))))
 
-Wvia_p1=1e4
+Wvia_p1=1e3
 Wvia_p2=0
 Wvia = np.diag(np.concatenate((WT_p1*np.ones(3),WT_p2*np.ones(3))))
 
@@ -135,7 +135,7 @@ model_Q_obs_s=2
 
 s1_ref=20
 s2_ref=20
-x_ref= np.concatenate((np.zeros(sys.Dx-2),[s1_ref,s2_ref]))
+x_ref= np.concatenate((np.mean(joint_limits,0),np.mean(joint_limits,0),[s1_ref,s2_ref]))
 ds1_ref=s1_ref/T
 ds2_ref=s2_ref/T
 u_ref = np.concatenate((np.zeros(sys.Dx-2),[ds1_ref,ds2_ref]))
@@ -189,9 +189,6 @@ ilqr_cost.set_timestep(T)
 ilqr_cost.set_cost(costs)
 ilqr_cost.set_state(xs, us)  # set initial trajectory
 
-# todo for batch?
-# ilqr_cost.mu = 1e-5
-
 # #### Solve and Plot
 ilqr_cost.solve(n_iter, method='batch', threshold_alpha=1e-5)
 xs_batch, us_batch = ilqr_cost.xs, ilqr_cost.us
@@ -217,7 +214,7 @@ p.resetSimulation()
 p.loadURDF('plane.urdf')
 robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 robot1_id = p.loadURDF(robot_urdf, basePosition=robot1_base_pose, useFixedBase=1)
-robot2_id = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, useFixedBase=1)
+robot2_id = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, baseOrientation=baseOrientation, useFixedBase=1)
 # Create a ball to show the target
 _, _, ballId1 = create_primitives(radius=0.05, rgbaColor=[1, 0, 0, 1])
 _, _, ballId2 = create_primitives(radius=0.05, rgbaColor=[0, 0, 1, 1])
