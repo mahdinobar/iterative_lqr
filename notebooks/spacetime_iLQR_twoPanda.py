@@ -123,8 +123,8 @@ Rfactor_dq1=1e1
 Rfactor_dq2=1e1
 Rfactor_dq2_j6=1e1
 
-Rfactor_ds1=1e1
-Rfactor_ds2=1e1
+Rfactor_ds1=1e-5
+Rfactor_ds2=1e-5
 R = np.diag(np.concatenate((Rfactor_dq1*np.array([1,1,1,1,1,1,1]),Rfactor_dq2**np.array([1,1,1,1,1]),Rfactor_dq2_j6**np.array([1]),Rfactor_dq2**np.array([1]),[Rfactor_ds1,Rfactor_ds2])))
 
 qobs=0
