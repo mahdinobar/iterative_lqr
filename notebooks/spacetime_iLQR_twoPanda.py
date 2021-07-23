@@ -59,8 +59,8 @@ for i in range(p.getNumJoints(robot1_id)):
 # getLinkState
 
 # Construct the robot system
-n_iter = 20
-T = 20 # number of data points
+n_iter = 15
+T = 40 # number of data points
 dt = 0.5
 dof = 7
 sys = URDFRobot_spacetime_dual(dof=dof, robot1_id=robot1_id, robot2_id=robot2_id, dt=dt)
@@ -106,8 +106,8 @@ p.resetBasePositionAndOrientation(ballId2, pos2_0, quat2_0)
 Q_q1=1e-3
 Q_q2=1e-3
 Q = np.diag(np.concatenate((Q_q1*np.ones(7),Q_q2*np.ones(7),[0, 0])))
-QT_s1=1e0
-QT_s2=1e0
+QT_s1=5e1
+QT_s2=5e1
 Qf = np.diag(np.concatenate((np.zeros(14),[QT_s1, QT_s2])))
 
 W = np.zeros((6,6))
@@ -133,8 +133,8 @@ model_Q_obs_s=2
 # model_Q_obs_x=1e0
 # Qobs=np.diag(np.concatenate((model_Q_obs_x*np.ones(3),[model_Q_obs_s])))
 
-s1_ref=20
-s2_ref=20
+s1_ref=10
+s2_ref=10
 x_ref= np.concatenate((np.mean(joint_limits,0),np.mean(joint_limits,0),[s1_ref,s2_ref]))
 ds1_ref=s1_ref/T
 ds2_ref=s2_ref/T
@@ -155,7 +155,7 @@ mu = 1e-6  # regularization coefficient
 
 # todo check make code robust
 nbViaPnts=np.shape(ViaPnts1)[0]
-idx= np.linspace(1,T,nbViaPnts+2, dtype='int')[1:-1]
+idx= np.linspace(1,1.2*T,nbViaPnts+2, dtype='int')[1:-1]
 id=0
 costs = []
 for i in range(T):
@@ -202,6 +202,8 @@ tt=np.linspace(0,np.max(ilqr_cost.xs[:,14:]), nbVis)
 for i in range(dof):
     xs_interp[:,i] = np.interp(tt, ilqr_cost.xs[:,14],ilqr_cost.xs[:,i])
     xs_interp[:,dof+i] = np.interp(tt, ilqr_cost.xs[:, 15], ilqr_cost.xs[:, dof+i])
+    xs_interp[:, -1]=tt
+    xs_interp[:, -2] = tt
 
 # xs_interp=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs_interp.npy")
 # # unocmment to record only final traj
@@ -226,6 +228,8 @@ p.resetBasePositionAndOrientation(ballId1_middle, ViaPnts1[0], (0, 0, 0, 1))
 
 sys.vis_traj(xs_interp, vis_dt=0.1)
 np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs_interp.npy",xs_interp)
+np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs.npy",ilqr_cost.xs)
+np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us.npy",ilqr_cost.us)
 # for i in range(21):
 #     print(i)
 #     sys.compute_ee(ilqr_cost.xs[i,:], link_id)
