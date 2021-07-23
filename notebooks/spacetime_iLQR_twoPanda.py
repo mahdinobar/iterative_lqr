@@ -107,7 +107,7 @@ Q_q1=1e-3
 Q_q2=1e-3
 Q = np.diag(np.concatenate((Q_q1*np.ones(7),Q_q2*np.ones(7),[0, 0])))
 QT_s1=1e2
-QT_s2=1e-1
+QT_s2=1e0
 Qf = np.diag(np.concatenate((np.zeros(14),[QT_s1, QT_s2])))
 
 W = np.zeros((6,6))
