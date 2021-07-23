@@ -31,7 +31,7 @@ robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 robot1_base_pose=[0, 0, 0]
 robot2_base_pose=[0, 1., 0]
 # make the target inside positive xy plane
-theta=-np.pi/2
+theta=-np.pi/2 #this needs to be matched with jacobian modification
 r = R.from_matrix([[np.cos(theta), -np.sin(theta), 0],
                    [np.sin(theta), np.cos(theta), 0],
                    [0, 0, 1]])
