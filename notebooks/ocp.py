@@ -67,7 +67,7 @@ class ILQR():
         return self.cost
     
     def forward_pass(self, max_iter = 100, method = 'batch'):
-        LB0 = self.Kapa * np.sum(-np.log10(self.us[:-1, 14]**2 * self.us[:-1, 15]**2))
+        LB0 = self.Kapa * np.sum(-np.log10(self.us[:-1, 14] * self.us[:-1, 15]))
         cost0 = self.calc_cost(self.xs, self.us) + LB0
         print('cost0=',cost0)
         alpha = 1.
@@ -193,17 +193,18 @@ class ILQR():
             print('******************************************************iteration=',i+1)
             epsilon_kapa = 1e-2
             mio_kapa = 0.1
-            self.Kapa=0
+            # # uncomment for Barrier internal method
+            # self.Kapa=0
             # uncomment for Barrier internal method
-            # self.Kapa = 1e-1
-            # while self.Kapa >= epsilon_kapa:
-            print('§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§self.Kapa=', self.Kapa)
-            self.calc_diff()
+            self.Kapa = 1e-1
+            while self.Kapa >= epsilon_kapa:
+                print('§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§self.Kapa=', self.Kapa)
+                self.calc_diff()
 
-            self.backward_pass(method=method)
-            # try:
-            dcost = self.forward_pass(method=method)
-            self.Kapa = mio_kapa * self.Kapa
+                self.backward_pass(method=method)
+                # try:
+                dcost = self.forward_pass(method=method)
+                self.Kapa = mio_kapa * self.Kapa
 
             if verbose is False:
                 clear_output(wait=True)

@@ -223,9 +223,9 @@ class URDFRobot_spacetime_dual():
     def compute_matrices(self, x, u):
         # linearize system
         A = np.eye(self.Dx)
-        B = np.diag(np.concatenate((u[14]**2*np.ones(self.dof),u[15]**2*np.ones(self.dof),[1,1])))
-        B[:self.dof, 14] = u[:self.dof]**2
-        B[self.dof:self.dof*2, 15] = u[self.dof:self.dof*2]**2
+        B = np.diag(np.concatenate((u[14]*np.ones(self.dof),u[15]*np.ones(self.dof),[1,1])))
+        B[:self.dof, 14] = u[:self.dof]
+        B[self.dof:self.dof*2, 15] = u[self.dof:self.dof*2]
         self.A, self.B = A, B
         return A, B
 
@@ -301,7 +301,7 @@ class URDFRobot_spacetime_dual():
 
     def step(self, x, u):
         # todo replace with linearized system ?
-        B = np.diag(np.concatenate((u[14]**2*np.ones(self.dof),u[15]**2*np.ones(self.dof),[1,1])))
+        B = np.diag(np.concatenate((u[14]*np.ones(self.dof),u[15]*np.ones(self.dof),[1,1])))
         x_next = x + B.dot(u)
         return x_next
 

@@ -38,9 +38,9 @@ r = R.from_matrix([[np.cos(theta), -np.sin(theta), 0],
 baseOrientation=r.as_quat()
 robot1_id = p.loadURDF(robot_urdf, basePosition=robot1_base_pose, useFixedBase=1)
 robot2_id = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, baseOrientation=baseOrientation, useFixedBase=1)
-p_target_1 = np.array([.5, .2, .4])
-p_target_2 = np.array([.5, .4, .4])
-ViaPnts1=np.array([[.3, .4, .6]])
+p_target_1 = np.array([.5, .2, .5])
+p_target_2 = np.array([.5, .4, .5])
+ViaPnts1=np.array([[.3, .4, .4]])
 ViaPnts2=np.array([])
 joint_limits = get_joint_limits(robot1_id, 7)
 
@@ -106,8 +106,8 @@ p.resetBasePositionAndOrientation(ballId2, pos2_0, quat2_0)
 Q_q1=1e-3
 Q_q2=1e-3
 Q = np.diag(np.concatenate((Q_q1*np.ones(7),Q_q2*np.ones(7),[0, 0])))
-QT_s1=1e0
-QT_s2=1e0
+QT_s1=1e2
+QT_s2=1e2
 Qf = np.diag(np.concatenate((np.zeros(14),[QT_s1, QT_s2])))
 
 W = np.zeros((6,6))
@@ -119,9 +119,9 @@ Wvia_p1=1e3
 Wvia_p2=0
 Wvia = np.diag(np.concatenate((WT_p1*np.ones(3),WT_p2*np.ones(3))))
 
-Rfactor_dq1=1e0
-Rfactor_dq2=1e0
-Rfactor_dq2_j2=1e0
+Rfactor_dq1=1e1
+Rfactor_dq2=1e1
+Rfactor_dq2_j2=1e1
 
 Rfactor_ds1=1e-10
 Rfactor_ds2=1e-10
@@ -133,8 +133,8 @@ model_Q_obs_s=2
 # model_Q_obs_x=1e0
 # Qobs=np.diag(np.concatenate((model_Q_obs_x*np.ones(3),[model_Q_obs_s])))
 
-s1_ref=20
-s2_ref=20
+s1_ref=10
+s2_ref=10
 x_ref= np.concatenate((np.mean(joint_limits,0),np.mean(joint_limits,0),[s1_ref,s2_ref]))
 ds1_ref=s1_ref/T
 ds2_ref=s2_ref/T
