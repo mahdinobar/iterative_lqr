@@ -59,7 +59,7 @@ for i in range(p.getNumJoints(robot1_id)):
 # getLinkState
 
 # Construct the robot system
-n_iter = 15
+n_iter = 7
 T = 40 # number of data points
 dt = 0.5
 dof = 7
@@ -106,25 +106,25 @@ p.resetBasePositionAndOrientation(ballId2, pos2_0, quat2_0)
 Q_q1=1e-3
 Q_q2=1e-3
 Q = np.diag(np.concatenate((Q_q1*np.ones(7),Q_q2*np.ones(7),[0, 0])))
-QT_s1=1e2
+QT_s1=1e0
 QT_s2=1e0
 Qf = np.diag(np.concatenate((np.zeros(14),[QT_s1, QT_s2])))
 
 W = np.zeros((6,6))
-WT_p1=1e3
-WT_p2=1e3
+WT_p1=1e4
+WT_p2=1e4
 WT = np.diag(np.concatenate((WT_p1*np.ones(3),WT_p2*np.ones(3))))
 
-Wvia_p1=1e3
+Wvia_p1=1e4
 Wvia_p2=0
 Wvia = np.diag(np.concatenate((WT_p1*np.ones(3),WT_p2*np.ones(3))))
 
-Rfactor_dq1=1e1
-Rfactor_dq2=1e1
-Rfactor_dq2_j6=1e1
+Rfactor_dq1=1e0
+Rfactor_dq2=5e-1
+Rfactor_dq2_j6=5e-1
 
-Rfactor_ds1=1e-5
-Rfactor_ds2=1e-10
+Rfactor_ds1=1e0
+Rfactor_ds2=1e1
 R = np.diag(np.concatenate((Rfactor_dq1*np.array([1,1,1,1,1,1,1]),Rfactor_dq2**np.array([1,1,1,1,1]),Rfactor_dq2_j6**np.array([1]),Rfactor_dq2**np.array([1]),[Rfactor_ds1,Rfactor_ds2])))
 
 qobs=1e3
