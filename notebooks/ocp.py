@@ -67,7 +67,7 @@ class ILQR():
         return self.cost
     
     def forward_pass(self, max_iter = 100, method = 'batch'):
-        LB0 = self.Kapa * np.sum(-np.log10(self.us[:-1, 14] * self.us[:-1, 15]))
+        LB0 = self.Kapa * np.sum(-np.log10(self.us[:-1, 14]**2 * self.us[:-1, 15]**2))
         cost0 = self.calc_cost(self.xs, self.us) + LB0
         print('cost0=',cost0)
         alpha = 1.
