@@ -65,28 +65,28 @@ dt = 0.5
 dof = 7
 sys = URDFRobot_spacetime_dual(dof=dof, robot1_id=robot1_id, robot2_id=robot2_id, dt=dt)
 
-# # Set the initial state
-# # comment for warm start
-# # q0_1 = np.array([0., 0., 0., 0., 0., 0., 0.])
-# # q0_2 = np.array([0., 0., 0., 0., 0., 0., 0.])
-# q0_1=np.mean(joint_limits,0)
-# q0_2=np.mean(joint_limits,0)
-# x0 = np.concatenate([q0_1, q0_1, np.zeros(2)])
+# Set the initial state
+# comment for warm start
+# q0_1 = np.array([0., 0., 0., 0., 0., 0., 0.])
+# q0_2 = np.array([0., 0., 0., 0., 0., 0., 0.])
+q0_1=np.mean(joint_limits,0)
+q0_2=np.mean(joint_limits,0)
+x0 = np.concatenate([q0_1, q0_1, np.zeros(2)])
 
-# uncomment to warm start traj
-us=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0_tailor.npy")
-xs=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0_tailor.npy")
-x0=xs[0,:]
+# # uncomment to warm start traj
+# us=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0_tailor.npy")
+# xs=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0_tailor.npy")
+# x0=xs[0,:]
 
 sys.set_init_state(x0)
 
-# ### Set initial control output
-# # set initial control output to be all zeros
-# # add epsilon offset to avoid barrier
-# # # comment for warm start
-# us = np.hstack((np.zeros((T + 1, sys.Du-2)),1e-3*np.ones((T + 1, 2))))
-# _ = sys.compute_matrices(x=None, u=us[0])
-# xs = sys.rollout(us[:-1])
+### Set initial control output
+# set initial control output to be all zeros
+# add epsilon offset to avoid barrier
+# # comment for warm start
+us = np.hstack((np.zeros((T + 1, sys.Du-2)),1e-3*np.ones((T + 1, 2))))
+_ = sys.compute_matrices(x=None, u=us[0])
+xs = sys.rollout(us[:-1])
 
 # #### Try forward kinematics
 pos1_0, quat1_0, pos2_0, quat2_0 = sys.compute_ee(x0, link_id)
@@ -239,6 +239,6 @@ pos1, _, pos2, _ = sys.compute_ee(ilqr_cost.xs[-1], link_id)
 
 print('pos1-p_target_1={}, pos2-p_target_2={}'.format(pos1-p_target_1, pos2-p_target_2))
 
-# # # uncomment to save warm start traj
-# np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0_tailor.npy",ilqr_cost.xs)
-# np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0_tailor.npy",ilqr_cost.us)
+# # uncomment to save warm start traj
+np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0_tailor.npy",ilqr_cost.xs)
+np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0_tailor.npy",ilqr_cost.us)

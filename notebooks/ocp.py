@@ -108,7 +108,7 @@ class ILQR():
                     us_new += [u]
                 us_new += [np.zeros(self.Du)]  #add the last control as 0, for convenience
                 if np.any(np.array(us_new)[:-1, 14:] < 0):
-                    LB = np.inf
+                    LB = self.Kapa*1e20
                 else:
                     LB = self.Kapa * np.sum(-np.log10(np.array(us_new)[:-1, 14] * np.array(us_new)[:-1, 15]))
                 #use the linearized dynamic for rollout
