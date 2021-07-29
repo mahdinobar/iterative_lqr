@@ -8,14 +8,10 @@ import time
 from ocp import *
 from costs import *
 from ocp_utils import *
-
 import pybullet as p
 import pybullet_data
 
-# get_ipython().run_line_magic('load_ext', 'autoreload')
-# get_ipython().run_line_magic('autoreload', '2')
 np.set_printoptions(precision=4, suppress=True)
-
 # #### Setup pybullet with the urdf
 # configure pybullet and load plane.urdf and quadcopter.urdf
 physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
@@ -26,10 +22,54 @@ physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visuali
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.resetSimulation()
 p.loadURDF('plane.urdf')
-
 robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
+
+# parameters ################################################################################
 robot1_base_pose=[0, 0, 0]
 robot2_base_pose=[0, 1., 0]
+
+p_target_1 = np.array([.5, .2, .5])
+p_target_2 = np.array([.5, .4, .5])
+
+ViaPnts1=np.array([[.3, .4, .4]])
+ViaPnts2=np.array([])
+
+# Construct the robot system
+warm_start=True
+n_iter = 10
+T = 40 # number of data points
+dt = 0.5
+dof = 7
+
+# Set precisions
+Q_q1=1e-3
+Q_q2=1e-3
+
+QT_s1=1e0
+QT_s2=1e0
+
+W = np.zeros((6,6))
+WT_p1=1e4
+WT_p2=1e4
+
+Wvia_p1=1e4
+Wvia_p2=0
+
+Rfactor_dq1=1e1
+Rfactor_dq2=8e0
+Rfactor_dq2_j2=8e0
+
+Rfactor_ds1=1e-10
+Rfactor_ds2=1e-10
+
+qobs=1e4
+obs_thresh=2
+model_Q_obs_s=2
+
+s1_ref=10
+s2_ref=10
+# ############################################################################################
+
 # make the target inside positive xy plane
 theta=-np.pi/2 #this needs to be matched with jacobian modification
 r = R.from_matrix([[np.cos(theta), -np.sin(theta), 0],
@@ -38,56 +78,44 @@ r = R.from_matrix([[np.cos(theta), -np.sin(theta), 0],
 baseOrientation=r.as_quat()
 robot1_id = p.loadURDF(robot_urdf, basePosition=robot1_base_pose, useFixedBase=1)
 robot2_id = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, baseOrientation=baseOrientation, useFixedBase=1)
-p_target_1 = np.array([.5, .2, .5])
-p_target_2 = np.array([.5, .4, .5])
-ViaPnts1=np.array([[.3, .4, .4]])
-ViaPnts2=np.array([])
 joint_limits = get_joint_limits(robot1_id, 7)
 
 # Define the end-effector
 link_id = 10
 link_name = 'panda_grasptarget_hand'
-
 # Create a ball to show the target
 _, _, ballId1 = create_primitives(radius=0.05, rgbaColor=[1, 0, 0, 1])
 _, _, ballId2 = create_primitives(radius=0.05, rgbaColor=[0, 0, 1, 1])
-
 # Finding the joint (and link) index
 for i in range(p.getNumJoints(robot1_id)):
     print(i, p.getJointInfo(robot1_id, i)[1])
     print(i, p.getJointInfo(robot2_id, i)[1])
-# getLinkState
 
-# Construct the robot system
-n_iter = 10
-T = 40 # number of data points
-dt = 0.5
-dof = 7
 sys = URDFRobot_spacetime_dual(dof=dof, robot1_id=robot1_id, robot2_id=robot2_id, dt=dt)
 
-# # Set the initial state
-# # comment for warm start
-# # q0_1 = np.array([0., 0., 0., 0., 0., 0., 0.])
-# # q0_2 = np.array([0., 0., 0., 0., 0., 0., 0.])
-# q0_1=np.mean(joint_limits,0)
-# q0_2=np.mean(joint_limits,0)
-# x0 = np.concatenate([q0_1, q0_1, np.zeros(2)])
+if warm_start is True:
+    # Set the initial state
+    # comment for warm start
+    # q0_1 = np.array([0., 0., 0., 0., 0., 0., 0.])
+    # q0_2 = np.array([0., 0., 0., 0., 0., 0., 0.])
+    q0_1=np.mean(joint_limits,0)
+    q0_2=np.mean(joint_limits,0)
+    x0 = np.concatenate([q0_1, q0_1, np.zeros(2)])
+    ### Set initial control output
+    # set initial control output to be all zeros
+    # add epsilon offset to avoid barrier
+    # # comment for warm start
+    us = np.hstack((np.zeros((T + 1, sys.Du-2)),1e-3*np.ones((T + 1, 2))))
+    _ = sys.compute_matrices(x=None, u=us[0])
+    xs = sys.rollout(us[:-1])
 
-# uncomment to warm start traj
-us=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0_tailor.npy")
-xs=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0_tailor.npy")
-x0=xs[0,:]
+else:
+    # uncomment to warm start traj
+    us=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0_tailor.npy")
+    xs=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0_tailor.npy")
+    x0=xs[0,:]
 
 sys.set_init_state(x0)
-
-# ### Set initial control output
-# # set initial control output to be all zeros
-# # add epsilon offset to avoid barrier
-# # # comment for warm start
-# us = np.hstack((np.zeros((T + 1, sys.Du-2)),1e-3*np.ones((T + 1, 2))))
-# _ = sys.compute_matrices(x=None, u=us[0])
-# xs = sys.rollout(us[:-1])
-
 # #### Try forward kinematics
 pos1_0, quat1_0, pos2_0, quat2_0 = sys.compute_ee(x0, link_id)
 # Put the ball at the end-effector
@@ -102,39 +130,12 @@ p.resetBasePositionAndOrientation(ballId2, pos2_0, quat2_0)
 #     xs_interp[:,i] = np.interp(T, xs[:,14],xs[:,i])
 #     xs_interp[:,dof+i] = np.interp(T, xs[:, 15], xs[:, dof+i])
 # sys.vis_traj(xs_interp)
-# #### Set the regularization cost coefficients Q and R
-Q_q1=1e-3
-Q_q2=1e-3
+
 Q = np.diag(np.concatenate((Q_q1*np.ones(7),Q_q2*np.ones(7),[0, 0])))
-QT_s1=1e0
-QT_s2=1e0
 Qf = np.diag(np.concatenate((np.zeros(14),[QT_s1, QT_s2])))
-
-W = np.zeros((6,6))
-WT_p1=1e4
-WT_p2=1e4
 WT = np.diag(np.concatenate((WT_p1*np.ones(3),WT_p2*np.ones(3))))
-
-Wvia_p1=1e4
-Wvia_p2=0
 Wvia = np.diag(np.concatenate((WT_p1*np.ones(3),WT_p2*np.ones(3))))
-
-Rfactor_dq1=1e1
-Rfactor_dq2=8e0
-Rfactor_dq2_j2=8e0
-
-Rfactor_ds1=1e-10
-Rfactor_ds2=1e-10
 R = np.diag(np.concatenate((Rfactor_dq1*np.array([1,1,1,1,1,1,1]),Rfactor_dq2**np.array([1]),Rfactor_dq2_j2**np.array([1]),Rfactor_dq2**np.array([1,1,1,1,1]),[Rfactor_ds1,Rfactor_ds2])))
-
-qobs=1e4
-obs_thresh=2
-model_Q_obs_s=2
-# model_Q_obs_x=1e0
-# Qobs=np.diag(np.concatenate((model_Q_obs_x*np.ones(3),[model_Q_obs_s])))
-
-s1_ref=10
-s2_ref=10
 x_ref= np.concatenate((np.mean(joint_limits,0),np.mean(joint_limits,0),[s1_ref,s2_ref]))
 ds1_ref=s1_ref/T
 ds2_ref=s2_ref/T
@@ -144,9 +145,6 @@ u_ref = np.concatenate((np.zeros(sys.Dx-2),[ds1_ref,ds2_ref]))
 mu = 1e-6  # regularization coefficient
 # #### Set end effector target
 # W and WT: cost coefficients for the end-effector reaching task
-
-# p.resetBasePositionAndOrientation(ballId1, p_target_1, (0, 0, 0, 1))
-# p.resetBasePositionAndOrientation(ballId2, p_target_2, (0, 0, 0, 1))
 
 # ### iLQR using cost model
 # #### Define the cost
@@ -177,7 +175,6 @@ for i in range(T):
 terminalStateCost = CostModelQuadratic(sys, Q=Qf, x_ref=x_ref)
 terminalControlCost = CostModelQuadratic(sys, R=R)
 terminalEECost = CostModelQuadraticTranslation_dual(sys, W=WT, ee_id=link_id, p_target_1=p_target_1, p_target_2=p_target_2)
-# obstAvoidCost = CostModelObstacle_exp4(sys, ee_id=link_id, qobs=qobs, Qobs=Qobs, th=obs_thresh)
 obstAvoidCost = CostModelObstacle_ellipsoids_exp4(sys, ee_id=link_id, qobs=qobs, th=obs_thresh, model_Q_obs_s=model_Q_obs_s)
 terminalCost = CostModelSum(sys, [terminalStateCost, terminalControlCost, terminalEECost, obstAvoidCost])
 costs += [terminalCost]
@@ -230,15 +227,13 @@ sys.vis_traj(xs_interp, vis_dt=0.1)
 np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs_interp.npy",xs_interp)
 np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs.npy",ilqr_cost.xs)
 np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us.npy",ilqr_cost.us)
-# for i in range(21):
-#     print(i)
-#     sys.compute_ee(ilqr_cost.xs[i,:], link_id)
 
 # # #### Compute Error
 pos1, _, pos2, _ = sys.compute_ee(ilqr_cost.xs[-1], link_id)
 
 print('pos1-p_target_1={}, pos2-p_target_2={}'.format(pos1-p_target_1, pos2-p_target_2))
 
-# # # uncomment to save warm start traj
-# np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0_tailor.npy",ilqr_cost.xs)
-# np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0_tailor.npy",ilqr_cost.us)
+if warm_start is True:
+    # # uncomment to save warm start traj
+    np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0_tailor.npy",ilqr_cost.xs)
+    np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0_tailor.npy",ilqr_cost.us)
