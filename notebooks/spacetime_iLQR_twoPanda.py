@@ -26,13 +26,13 @@ robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 
 # parameters ################################################################################
 robot1_base_pose=[0, 0, 0]
-robot2_base_pose=[0, 1., 0]
+robot2_base_pose=[0.6198, -0.7636, 0]
 
 p_target_1 = np.array([.5, .2, .5])
 p_target_2 = np.array([.5, .4, .5])
 
-ViaPnts1=np.array([[.3, .4, .4]])
-ViaPnts2=np.array([])
+ViaPnts1=np.array([[.3, -.41, .1],[.3, -.42, .1],[.3, -.43, .1],[.3, -.44, .1]])
+ViaPnts2=np.array([[.3, -.21, .1],[.3, -.22, .1],[.3, -.23, .1],[.3, -.24, .1]])
 
 # Construct the robot system
 warm_start=True
@@ -40,6 +40,11 @@ n_iter = 10
 T = 40 # number of data points
 dt = 0.5
 dof = 7
+
+# todo check make code robust
+# specify at which time step to pass viapoints
+nbViaPnts=np.shape(ViaPnts1)[0]
+idx= np.linspace(1,1.*T,nbViaPnts+2, dtype='int')[1:-1]
 
 # Set precisions
 Q_q1=1e-3
@@ -151,9 +156,6 @@ mu = 1e-6  # regularization coefficient
 # The costs consist of: a) state regularization (Q), b) control regularization (R), and c) End-effector reaching task (W)
 # Running cost is for the time 0 <= t < T, while terminal cost is for the time t = T
 
-# todo check make code robust
-nbViaPnts=np.shape(ViaPnts1)[0]
-idx= np.linspace(1,1.*T,nbViaPnts+2, dtype='int')[1:-1]
 id=0
 costs = []
 for i in range(T):
@@ -161,7 +163,7 @@ for i in range(T):
     # todo check make code robust
     if any(i == c for c in idx) and nbViaPnts>0:
         runningEECost = CostModelQuadraticTranslation_dual(sys, W=Wvia, ee_id=link_id, p_target_1=ViaPnts1[id],
-                                                           p_target_2=p_target_2)
+                                                           p_target_2=ViaPnts2[id])
         id += 1
     else:
         runningEECost = CostModelQuadraticTranslation_dual(sys, W=W, ee_id=link_id, p_target_1=p_target_1,
