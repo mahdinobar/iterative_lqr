@@ -7,7 +7,7 @@ from ocp_utils import quat2Mat
 from scipy.linalg import block_diag
 
 class CostModelQuadratic():
-    def __init__(self, sys, Q = None, R = None, x_ref = None, u_ref = None):
+    def __init__(self, sys, Q = None, R = None, S=None, x_ref = None, u_ref = None):
         self.sys = sys
         self.Dx, self.Du = sys.Dx, sys.Du
         self.Q, self.R = Q, R
@@ -16,6 +16,11 @@ class CostModelQuadratic():
         self.x_ref, self.u_ref = x_ref, u_ref
         if x_ref is None: self.x_ref = np.zeros(self.Dx)
         if u_ref is None: self.u_ref = np.zeros(self.Du)
+        if S is None:
+            self.S = np.zeros((self.Du, self.Du))
+        else:
+            self.S=S
+        self.u_prev = np.zeros(self.Du)
             
     def set_ref(self, x_ref=None, u_ref=None):
         if x_ref is not None:
@@ -24,15 +29,22 @@ class CostModelQuadratic():
             self.u_ref = u_ref
     
     def calc(self, x, u):
+        # for smoothnes cost
+        if any(self.S):
+            self.L = 0.5 * (u - self.u_prev).T.dot(self.S).dot(u - self.u_prev)
+            self.u_prev=u
+            # print('{}={}'.format(type(self).__name__, self.L))
+            return self.L
+
         self.L = 0.5*(x-self.x_ref).T.dot(self.Q).dot(x-self.x_ref) + 0.5*(u-self.u_ref).T.dot(self.R).dot(u-self.u_ref)
         #print('{}={}'.format(type(self).__name__, self.L))
         return self.L
 
     def calcDiff(self, x, u):
         self.Lx = self.Q.dot(x-self.x_ref)
-        self.Lu = self.R.dot(u-self.u_ref)
+        self.Lu = self.R.dot(u-self.u_ref)+self.S.dot(u-self.u_prev)
         self.Lxx = self.Q.copy()
-        self.Luu = self.R.copy()
+        self.Luu = self.R.copy()+self.S.copy()
         self.Lxu = np.zeros((self.Dx, self.Du))
 
 class CostModelQuadraticOrientation():

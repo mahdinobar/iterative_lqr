@@ -14,8 +14,8 @@ import pybullet_data
 np.set_printoptions(precision=4, suppress=True)
 # #### Setup pybullet with the urdf
 # configure pybullet and load plane.urdf and quadcopter.urdf
-physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
-# physicsClient = p.connect(p.GUI)  # pybullet with visualisation
+# physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
+physicsClient = p.connect(p.GUI)  # pybullet with visualisation
 # physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/test.mp4\" --mp4fps=10")  # pybullet with visualisation and recording
 # p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-30, cameraTargetPosition=[0,0.5,0])
 # p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
@@ -35,7 +35,7 @@ ViaPnts1=np.array([[.3, -.41, .1],[.3, -.42, .1],[.3, -.43, .1],[.3, -.44, .1]])
 ViaPnts2=np.array([[.3, -.21, .1],[.3, -.22, .1],[.3, -.23, .1],[.3, -.24, .1]])
 
 # Construct the robot system
-warm_start=True
+warm_start=False
 n_iter = 10
 T = 40 # number of data points
 dt = 0.5
@@ -60,12 +60,19 @@ WT_p2=1e4
 Wvia_p1=1e4
 Wvia_p2=0
 
-Rfactor_dq1=1e1
-Rfactor_dq2=8e0
-Rfactor_dq2_j2=8e0
+R_dq1=1e1
+R_dq2=8e0
+R_dq2_j2=8e0
 
-Rfactor_ds1=1e-10
-Rfactor_ds2=1e-10
+R_ds1=1e-10
+R_ds2=1e-10
+
+S_dq1=1e0
+S_dq2=1e0
+S_dq2_j2=1e0
+
+S_ds1=1e0
+S_ds2=1e0
 
 qobs=1e4
 obs_thresh=2
@@ -76,7 +83,7 @@ s2_ref=10
 # ############################################################################################
 
 # make the target inside positive xy plane
-theta=-np.pi/2 #this needs to be matched with jacobian modification
+theta=0#-np.pi/2 #this needs to be matched with jacobian modification
 r = R.from_matrix([[np.cos(theta), -np.sin(theta), 0],
                    [np.sin(theta), np.cos(theta), 0],
                    [0, 0, 1]])
@@ -98,13 +105,18 @@ for i in range(p.getNumJoints(robot1_id)):
 
 sys = URDFRobot_spacetime_dual(dof=dof, robot1_id=robot1_id, robot2_id=robot2_id, dt=dt)
 
-if warm_start is True:
+if warm_start is False:
     # Set the initial state
     # comment for warm start
     # q0_1 = np.array([0., 0., 0., 0., 0., 0., 0.])
     # q0_2 = np.array([0., 0., 0., 0., 0., 0., 0.])
     q0_1=np.mean(joint_limits,0)
     q0_2=np.mean(joint_limits,0)
+    # fix first joint of robot2
+    q0_2[0]=1
+    for i in range(dof):
+        p.resetJointState(robot1_id, i, q0_1[i])
+        p.resetJointState(robot2_id, i, q0_2[i])
     x0 = np.concatenate([q0_1, q0_1, np.zeros(2)])
     ### Set initial control output
     # set initial control output to be all zeros
@@ -140,7 +152,8 @@ Q = np.diag(np.concatenate((Q_q1*np.ones(7),Q_q2*np.ones(7),[0, 0])))
 Qf = np.diag(np.concatenate((np.zeros(14),[QT_s1, QT_s2])))
 WT = np.diag(np.concatenate((WT_p1*np.ones(3),WT_p2*np.ones(3))))
 Wvia = np.diag(np.concatenate((WT_p1*np.ones(3),WT_p2*np.ones(3))))
-R = np.diag(np.concatenate((Rfactor_dq1*np.array([1,1,1,1,1,1,1]),Rfactor_dq2**np.array([1]),Rfactor_dq2_j2**np.array([1]),Rfactor_dq2**np.array([1,1,1,1,1]),[Rfactor_ds1,Rfactor_ds2])))
+R = np.diag(np.concatenate((R_dq1*np.array([1,1,1,1,1,1,1]),R_dq2**np.array([1]),R_dq2_j2**np.array([1]),R_dq2**np.array([1,1,1,1,1]),[R_ds1,R_ds2])))
+S = np.diag(np.concatenate((S_dq1*np.array([1,1,1,1,1,1,1]),S_dq2**np.array([1]),S_dq2_j2**np.array([1]),S_dq2**np.array([1,1,1,1,1]),[S_ds1,S_ds2])))
 x_ref= np.concatenate((np.mean(joint_limits,0),np.mean(joint_limits,0),[s1_ref,s2_ref]))
 ds1_ref=s1_ref/T
 ds2_ref=s2_ref/T
@@ -170,6 +183,7 @@ for i in range(T):
                                                            p_target_2=p_target_2)
     runningStateCost = CostModelQuadratic(sys, Q=Q, x_ref=x_ref)
     runningControlCost = CostModelQuadratic(sys, R=R, u_ref=u_ref)
+    smoothCost = CostModelQuadratic(sys, R=R, u_ref=u_prev)
     # obstAvoidCost = CostModelObstacle_exp4(sys, ee_id=link_id, qobs=qobs, Qobs=Qobs, th=obs_thresh)
     obstAvoidCost = CostModelObstacle_ellipsoids_exp4(sys, ee_id=link_id, qobs=qobs, th=obs_thresh, model_Q_obs_s=model_Q_obs_s)
     runningCost = CostModelSum(sys, [runningStateCost, runningControlCost, runningEECost, obstAvoidCost])
