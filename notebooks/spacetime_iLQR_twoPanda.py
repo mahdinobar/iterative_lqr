@@ -17,8 +17,8 @@ np.set_printoptions(precision=4, suppress=True)
 # physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
 physicsClient = p.connect(p.GUI)  # pybullet with visualisation
 # physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/test.mp4\" --mp4fps=10")  # pybullet with visualisation and recording
-# p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-30, cameraTargetPosition=[0,0.5,0])
-# p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
+p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-90, cameraTargetPosition=[0,0.,0])
+p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.resetSimulation()
 p.loadURDF('plane.urdf')
@@ -31,8 +31,8 @@ robot2_base_pose=[0.6198, -0.7636, 0]
 p_target_1 = np.array([.5, .2, .5])
 p_target_2 = np.array([.5, .4, .5])
 
-ViaPnts1=np.array([[.3, -.41, .1],[.3, -.42, .1],[.3, -.43, .1],[.3, -.44, .1]])
-ViaPnts2=np.array([[.3, -.21, .1],[.3, -.22, .1],[.3, -.23, .1],[.3, -.24, .1]])
+ViaPnts1=np.array([[.6, -.325, .10],[.6, -.325, .045],[.6, -.325, .10],[.6, .4, .06]])
+ViaPnts2=np.array([[.6, -0.10, .10],[.6, -0.10, .045],[.6, -0.10, .10],[1.2, -.4, .06]])
 
 # Construct the robot system
 warm_start=False
@@ -96,8 +96,15 @@ joint_limits = get_joint_limits(robot1_id, 7)
 link_id = 10
 link_name = 'panda_grasptarget_hand'
 # Create a ball to show the target
-_, _, ballId1 = create_primitives(radius=0.05, rgbaColor=[1, 0, 0, 1])
-_, _, ballId2 = create_primitives(radius=0.05, rgbaColor=[0, 0, 1, 1])
+_, _, ballId1 = create_primitives(radius=0.03, rgbaColor=[1, 0, 0, 1])
+_, _, ballId2 = create_primitives(radius=0.03, rgbaColor=[0, 0, 1, 1])
+
+_, _, cylinderId1 = create_primitives(shapeType=p.GEOM_CYLINDER, length=0.023, radius=0.01, rgbaColor=[1, 0, 0, 1])
+_, _, cylinderId2 = create_primitives(shapeType=p.GEOM_CYLINDER, length=0.023, radius=0.01, rgbaColor=[0, 0, 1, 1])
+
+_, _, boxId1 = create_primitives(shapeType=p.GEOM_BOX, length=0.023, radius=0.01, rgbaColor=[1, 0, 0, 1], halfExtents = [0.1, 0.1, 0.05])
+_, _, boxId2 = create_primitives(shapeType=p.GEOM_BOX, length=0.023, radius=0.01, rgbaColor=[0, 0, 1, 1], halfExtents = [0.1, 0.1, 0.05])
+
 # Finding the joint (and link) index
 for i in range(p.getNumJoints(robot1_id)):
     print(i, p.getJointInfo(robot1_id, i)[1])
@@ -113,11 +120,10 @@ if warm_start is False:
     q0_1=np.mean(joint_limits,0)
     q0_2=np.mean(joint_limits,0)
     # fix first joint of robot2
+    q0_1[0]=0.5
     q0_2[0]=1
-    for i in range(dof):
-        p.resetJointState(robot1_id, i, q0_1[i])
-        p.resetJointState(robot2_id, i, q0_2[i])
-    x0 = np.concatenate([q0_1, q0_1, np.zeros(2)])
+    x0 = np.concatenate([q0_1, q0_2, np.zeros(2)])
+    sys.set_init_state(x0)
     ### Set initial control output
     # set initial control output to be all zeros
     # add epsilon offset to avoid barrier
@@ -131,13 +137,19 @@ else:
     us=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/us0_tailor.npy")
     xs=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/xs0_tailor.npy")
     x0=xs[0,:]
+    sys.set_init_state(x0)
 
-sys.set_init_state(x0)
 # #### Try forward kinematics
 pos1_0, quat1_0, pos2_0, quat2_0 = sys.compute_ee(x0, link_id)
 # Put the ball at the end-effector
 p.resetBasePositionAndOrientation(ballId1, pos1_0, quat1_0)
 p.resetBasePositionAndOrientation(ballId2, pos2_0, quat2_0)
+
+p.resetBasePositionAndOrientation(cylinderId1, ViaPnts1[1], [0,0,0,1])
+p.resetBasePositionAndOrientation(cylinderId2, ViaPnts2[1], [0,0,0,1])
+
+p.resetBasePositionAndOrientation(boxId1, ViaPnts1[3], [0,0,0,1])
+p.resetBasePositionAndOrientation(boxId2, ViaPnts2[3], [0,0,0,1])
 
 # # #### Plot initial trajectory
 # # interpolate the virtual time for visualization of both
