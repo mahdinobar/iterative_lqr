@@ -318,6 +318,7 @@ class URDFRobot_spacetime_dual():
         q1 = x[:self.dof]
         q2 = x[self.dof:self.dof*2]
         for i in range(self.dof):
+            p.getJointState(self.robot1_id, 10)
             p.resetJointState(self.robot1_id, self.joint_indices[i], q1[i])
             p.resetJointState(self.robot2_id, self.joint_indices[i], q2[i])
         return

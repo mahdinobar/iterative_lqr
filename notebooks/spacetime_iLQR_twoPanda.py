@@ -20,31 +20,32 @@ physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visuali
 # p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-90, cameraTargetPosition=[0,0.,0])
 # p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 # p.setAdditionalSearchPath(pybullet_data.getDataPath())
-p.resetSimulation()
+# p.resetSimulation()
 # p.loadURDF('plane.urdf')
 robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 
 # parameters ################################################################################
-robot1_base_pose=[0, 0, 0]
-robot2_base_pose=[0.6198, -0.7636, 0]
-
-p_target_1 = np.array([.5, .2, .5])
-p_target_2 = np.array([.5, .4, .5])
-
-ViaPnts1=np.array([[.6, -.325, .10],[.6, -.325, .045],[.6, -.325, .10],[.6, .4, .06]])
-ViaPnts2=np.array([[.6, -0.10, .10],[.6, -0.10, .045],[.6, -0.10, .10],[1.2, -.4, .06]])
-
 # Construct the robot system
 warm_start=False
-n_iter = 25
+n_iter = 40
 T = 40 # number of data points
 dt = 0.5
 dof = 7
 
+robot1_base_pose=[0, 0, 0]
+robot2_base_pose=[0.6198, -0.7636, 0]
+
+ViaPnts1=np.array([[.65, -.225, .15],[.65, -.225, .045],[.65, -.225, .15]])
+ViaPnts2=np.array([[.65, -0.0, .15],[.65, -0.0, .045],[.65, -0.00, .15]])
 # todo check make code robust
 # specify at which time step to pass viapoints
 nbViaPnts=np.shape(ViaPnts1)[0]
-idx= np.linspace(1,1.*T,nbViaPnts+2, dtype='int')[1:-1]
+idx=np.array([18, 20, 22],dtype=int)
+
+p_target_1 = np.array([0.60, +0.40, 0.10])
+p_target_2 = np.array([1.20, -0.40, 0.10])
+
+# idx= np.linspace(1,1.*T,nbViaPnts+2, dtype='int')[1:-1]
 
 # Set precisions
 Q_q1=1e-3
@@ -58,11 +59,11 @@ WT_p1=1e4
 WT_p2=1e4
 
 Wvia_p1=1e4
-Wvia_p2=0
+Wvia_p2=1e4
 
-R_dq1=1e1
-R_dq2=8e0
-R_dq2_j2=8e0
+R_dq1=1e0
+R_dq2=1e0
+R_dq2_j2=1e0
 
 R_ds1=1e-10
 R_ds2=1e-10
@@ -74,7 +75,7 @@ S_dq2_j2=1e0
 S_ds1=1e0
 S_ds2=1e0
 
-qobs=1e4
+qobs=0
 obs_thresh=2
 model_Q_obs_s=2
 
@@ -95,15 +96,15 @@ joint_limits = get_joint_limits(robot1_id, 7)
 # Define the end-effector
 link_id = 10
 link_name = 'panda_grasptarget_hand'
-# Create a ball to show the target
-_, _, ballId1 = create_primitives(radius=0.03, rgbaColor=[1, 0, 0, 1])
-_, _, ballId2 = create_primitives(radius=0.03, rgbaColor=[0, 0, 1, 1])
-
-_, _, cylinderId1 = create_primitives(shapeType=p.GEOM_CYLINDER, length=0.023, radius=0.01, rgbaColor=[1, 0, 0, 1])
-_, _, cylinderId2 = create_primitives(shapeType=p.GEOM_CYLINDER, length=0.023, radius=0.01, rgbaColor=[0, 0, 1, 1])
-
-_, _, boxId1 = create_primitives(shapeType=p.GEOM_BOX, length=0.023, radius=0.01, rgbaColor=[1, 0, 0, 1], halfExtents = [0.1, 0.1, 0.05])
-_, _, boxId2 = create_primitives(shapeType=p.GEOM_BOX, length=0.023, radius=0.01, rgbaColor=[0, 0, 1, 1], halfExtents = [0.1, 0.1, 0.05])
+# # Create a ball to show the target
+# _, _, ballId1 = create_primitives(radius=0.03, rgbaColor=[1, 0, 0, 1])
+# _, _, ballId2 = create_primitives(radius=0.03, rgbaColor=[0, 0, 1, 1])
+#
+# _, _, cylinderId1 = create_primitives(shapeType=p.GEOM_CYLINDER, length=0.023, radius=0.01, rgbaColor=[1, 0, 0, 1])
+# _, _, cylinderId2 = create_primitives(shapeType=p.GEOM_CYLINDER, length=0.023, radius=0.01, rgbaColor=[0, 0, 1, 1])
+#
+# _, _, boxId1 = create_primitives(shapeType=p.GEOM_BOX, length=0.023, radius=0.01, rgbaColor=[1, 0, 0, 1], halfExtents = [0.1, 0.1, 0.05])
+# _, _, boxId2 = create_primitives(shapeType=p.GEOM_BOX, length=0.023, radius=0.01, rgbaColor=[0, 0, 1, 1], halfExtents = [0.1, 0.1, 0.05])
 
 # Finding the joint (and link) index
 for i in range(p.getNumJoints(robot1_id)):
@@ -141,15 +142,15 @@ else:
 
 # #### Try forward kinematics
 pos1_0, quat1_0, pos2_0, quat2_0 = sys.compute_ee(x0, link_id)
-# Put the ball at the end-effector
-p.resetBasePositionAndOrientation(ballId1, pos1_0, quat1_0)
-p.resetBasePositionAndOrientation(ballId2, pos2_0, quat2_0)
+# # Put the ball at the end-effector
+# p.resetBasePositionAndOrientation(ballId1, pos1_0, quat1_0)
+# p.resetBasePositionAndOrientation(ballId2, pos2_0, quat2_0)
 
-p.resetBasePositionAndOrientation(cylinderId1, ViaPnts1[1], [0,0,0,1])
-p.resetBasePositionAndOrientation(cylinderId2, ViaPnts2[1], [0,0,0,1])
-
-p.resetBasePositionAndOrientation(boxId1, ViaPnts1[3], [0,0,0,1])
-p.resetBasePositionAndOrientation(boxId2, ViaPnts2[3], [0,0,0,1])
+# p.resetBasePositionAndOrientation(cylinderId1, ViaPnts1[1], [0,0,0,1])
+# p.resetBasePositionAndOrientation(cylinderId2, ViaPnts2[1], [0,0,0,1])
+#
+# p.resetBasePositionAndOrientation(boxId1, p_target_1, [0,0,0,1])
+# p.resetBasePositionAndOrientation(boxId2, p_target_2, [0,0,0,1])
 
 # # #### Plot initial trajectory
 # # interpolate the virtual time for visualization of both
@@ -232,38 +233,51 @@ for i in range(dof):
     xs_interp[:, -1]=tt
     xs_interp[:, -2] = tt
 
+np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/xs_interp.npy",xs_interp)
+np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/xs.npy",ilqr_cost.xs)
+np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/us.npy",ilqr_cost.us)
+
 # xs_interp=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/xs_interp.npy")
 # # unocmment to record only final traj
 p.disconnect()
 physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/test.mp4\" --mp4fps=10")  # pybullet with visualisation and recording
-p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-90, cameraTargetPosition=[0,0.5,0])
+p.resetDebugVisualizerCamera(cameraDistance=1.5, cameraYaw=110, cameraPitch=-30, cameraTargetPosition=(ViaPnts1[1]+ViaPnts2[1])/2)
 p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.resetSimulation()
-p.loadURDF('plane.urdf')
 robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 robot1_id = p.loadURDF(robot_urdf, basePosition=robot1_base_pose, useFixedBase=1)
 robot2_id = p.loadURDF(robot_urdf, basePosition=robot2_base_pose, baseOrientation=baseOrientation, useFixedBase=1)
+p.loadURDF('plane.urdf')
 # Create a ball to show the target
-_, _, ballId1 = create_primitives(radius=0.05, rgbaColor=[1, 0, 0, 1])
-_, _, ballId2 = create_primitives(radius=0.05, rgbaColor=[0, 0, 1, 1])
-p.resetBasePositionAndOrientation(ballId1, p_target_1, (0, 0, 0, 1))
-p.resetBasePositionAndOrientation(ballId2, p_target_2, (0, 0, 0, 1))
+# _, _, ballId1 = create_primitives(radius=0.05, rgbaColor=[1, 0, 0, 1])
+# _, _, ballId2 = create_primitives(radius=0.05, rgbaColor=[0, 0, 1, 1])
+# p.resetBasePositionAndOrientation(ballId1, p_target_1, (0, 0, 0, 1))
+# p.resetBasePositionAndOrientation(ballId2, p_target_2, (0, 0, 0, 1))
 
-_, _, ballId1_middle = create_primitives(radius=0.05, rgbaColor=[1, 0, 0, 1])
-p.resetBasePositionAndOrientation(ballId1_middle, ViaPnts1[0], (0, 0, 0, 1))
+_, _, cylinderId1 = create_primitives(shapeType=p.GEOM_CYLINDER, length=0.023, radius=0.01, rgbaColor=[1, 0, 0, 1])
+_, _, cylinderId2 = create_primitives(shapeType=p.GEOM_CYLINDER, length=0.023, radius=0.01, rgbaColor=[0, 0, 1, 1])
+
+_, _, boxId1 = create_primitives(shapeType=p.GEOM_BOX, length=0.023, radius=0.01, rgbaColor=[1, 0, 0, 1], halfExtents = [0.1, 0.1, 0.05])
+_, _, boxId2 = create_primitives(shapeType=p.GEOM_BOX, length=0.023, radius=0.01, rgbaColor=[0, 0, 1, 1], halfExtents = [0.1, 0.1, 0.05])
+
+p.resetBasePositionAndOrientation(cylinderId1, ViaPnts1[1], [0,0,0,1])
+p.resetBasePositionAndOrientation(cylinderId2, ViaPnts2[1], [0,0,0,1])
+
+p.resetBasePositionAndOrientation(boxId1, p_target_1, [0,0,0,1])
+p.resetBasePositionAndOrientation(boxId2, p_target_2, [0,0,0,1])
+
+# _, _, ballId1_middle = create_primitives(radius=0.05, rgbaColor=[1, 0, 0, 1])
+# p.resetBasePositionAndOrientation(ballId1_middle, ViaPnts1[0], (0, 0, 0, 1))
 
 sys.vis_traj(xs_interp, vis_dt=0.1)
-np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/xs_interp.npy",xs_interp)
-np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/xs.npy",ilqr_cost.xs)
-np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/us.npy",ilqr_cost.us)
 
 # # #### Compute Error
 pos1, _, pos2, _ = sys.compute_ee(ilqr_cost.xs[-1], link_id)
 
 print('pos1-p_target_1={}, pos2-p_target_2={}'.format(pos1-p_target_1, pos2-p_target_2))
 
-if warm_start is True:
+if warm_start is False:
     # # uncomment to save warm start traj
     np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/xs0_tailor.npy",ilqr_cost.xs)
     np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/us0_tailor.npy",ilqr_cost.us)
