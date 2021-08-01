@@ -14,14 +14,14 @@ import pybullet_data
 np.set_printoptions(precision=4, suppress=True)
 # #### Setup pybullet with the urdf
 # configure pybullet and load plane.urdf and quadcopter.urdf
-# physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
-physicsClient = p.connect(p.GUI)  # pybullet with visualisation
+physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
+# physicsClient = p.connect(p.GUI)  # pybullet with visualisation
 # physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/test.mp4\" --mp4fps=10")  # pybullet with visualisation and recording
-p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-90, cameraTargetPosition=[0,0.,0])
-p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
-p.setAdditionalSearchPath(pybullet_data.getDataPath())
+# p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-90, cameraTargetPosition=[0,0.,0])
+# p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
+# p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.resetSimulation()
-p.loadURDF('plane.urdf')
+# p.loadURDF('plane.urdf')
 robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 
 # parameters ################################################################################
@@ -183,6 +183,7 @@ mu = 1e-6  # regularization coefficient
 
 id=0
 costs = []
+
 for i in range(T):
     # BarrierCost = CostModelBarrier(sys, K=K, x_ref=x_ref)
     # todo check make code robust
@@ -195,13 +196,14 @@ for i in range(T):
                                                            p_target_2=p_target_2)
     runningStateCost = CostModelQuadratic(sys, Q=Q, x_ref=x_ref)
     runningControlCost = CostModelQuadratic(sys, R=R, u_ref=u_ref)
-    smoothCost = CostModelQuadratic(sys, R=R, u_ref=u_prev)
+    smoothCost = CostModelQuadratic(sys, S=S)
     # obstAvoidCost = CostModelObstacle_exp4(sys, ee_id=link_id, qobs=qobs, Qobs=Qobs, th=obs_thresh)
     obstAvoidCost = CostModelObstacle_ellipsoids_exp4(sys, ee_id=link_id, qobs=qobs, th=obs_thresh, model_Q_obs_s=model_Q_obs_s)
-    runningCost = CostModelSum(sys, [runningStateCost, runningControlCost, runningEECost, obstAvoidCost])
+    runningCost = CostModelSum(sys, [runningStateCost, runningControlCost, smoothCost, runningEECost, obstAvoidCost])
     costs += [runningCost]
 terminalStateCost = CostModelQuadratic(sys, Q=Qf, x_ref=x_ref)
 terminalControlCost = CostModelQuadratic(sys, R=R)
+terminalSmoothCost = CostModelQuadratic(sys, S=S)
 terminalEECost = CostModelQuadraticTranslation_dual(sys, W=WT, ee_id=link_id, p_target_1=p_target_1, p_target_2=p_target_2)
 obstAvoidCost = CostModelObstacle_ellipsoids_exp4(sys, ee_id=link_id, qobs=qobs, th=obs_thresh, model_Q_obs_s=model_Q_obs_s)
 terminalCost = CostModelSum(sys, [terminalStateCost, terminalControlCost, terminalEECost, obstAvoidCost])

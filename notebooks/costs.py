@@ -30,7 +30,7 @@ class CostModelQuadratic():
     
     def calc(self, x, u):
         # for smoothnes cost
-        if any(self.S):
+        if np.any(self.S):
             self.L = 0.5 * (u - self.u_prev).T.dot(self.S).dot(u - self.u_prev)
             self.u_prev=u
             # print('{}={}'.format(type(self).__name__, self.L))
