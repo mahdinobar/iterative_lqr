@@ -27,7 +27,7 @@ robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 # parameters ################################################################################
 # Construct the robot system
 warm_start=False
-n_iter = 40
+n_iter = 50
 T = 40 # number of data points
 dt = 0.5
 dof = 7
@@ -35,15 +35,15 @@ dof = 7
 robot1_base_pose=[0, 0, 0]
 robot2_base_pose=[0.6198, -0.7636, 0]
 
-ViaPnts1=np.array([[.65, -.225, .15],[.65, -.225, .045],[.65, -.225, .15]])
-ViaPnts2=np.array([[.65, -0.0, .15],[.65, -0.0, .045],[.65, -0.00, .15]])
+ViaPnts1=np.array([[.65, -.225, .20],[.65, -.225, .145],[.65, -.225, .20]])
+ViaPnts2=np.array([[.65, 0.0, .20],[.65, 0.0, .145],[.65, 0.00, .20]])
 # todo check make code robust
 # specify at which time step to pass viapoints
 nbViaPnts=np.shape(ViaPnts1)[0]
-idx=np.array([18, 20, 22],dtype=int)
+idx=np.array([15, 20, 25],dtype=int)
 
 p_target_1 = np.array([0.60, +0.40, 0.10])
-p_target_2 = np.array([1.20, -0.40, 0.10])
+p_target_2 = np.array([1.20, -0.20, 0.10])
 
 # idx= np.linspace(1,1.*T,nbViaPnts+2, dtype='int')[1:-1]
 
@@ -96,15 +96,15 @@ joint_limits = get_joint_limits(robot1_id, 7)
 # Define the end-effector
 link_id = 10
 link_name = 'panda_grasptarget_hand'
-# # Create a ball to show the target
-# _, _, ballId1 = create_primitives(radius=0.03, rgbaColor=[1, 0, 0, 1])
-# _, _, ballId2 = create_primitives(radius=0.03, rgbaColor=[0, 0, 1, 1])
-#
-# _, _, cylinderId1 = create_primitives(shapeType=p.GEOM_CYLINDER, length=0.023, radius=0.01, rgbaColor=[1, 0, 0, 1])
-# _, _, cylinderId2 = create_primitives(shapeType=p.GEOM_CYLINDER, length=0.023, radius=0.01, rgbaColor=[0, 0, 1, 1])
-#
-# _, _, boxId1 = create_primitives(shapeType=p.GEOM_BOX, length=0.023, radius=0.01, rgbaColor=[1, 0, 0, 1], halfExtents = [0.1, 0.1, 0.05])
-# _, _, boxId2 = create_primitives(shapeType=p.GEOM_BOX, length=0.023, radius=0.01, rgbaColor=[0, 0, 1, 1], halfExtents = [0.1, 0.1, 0.05])
+# Create a ball to show the target
+_, _, ballId1 = create_primitives(radius=0.03, rgbaColor=[1, 0, 0, 1])
+_, _, ballId2 = create_primitives(radius=0.03, rgbaColor=[0, 0, 1, 1])
+
+_, _, cylinderId1 = create_primitives(shapeType=p.GEOM_CYLINDER, length=0.023, radius=0.01, rgbaColor=[1, 0, 0, 1])
+_, _, cylinderId2 = create_primitives(shapeType=p.GEOM_CYLINDER, length=0.023, radius=0.01, rgbaColor=[0, 0, 1, 1])
+
+_, _, boxId1 = create_primitives(shapeType=p.GEOM_BOX, length=0.023, radius=0.01, rgbaColor=[1, 0, 0, 1], halfExtents = [0.1, 0.1, 0.05])
+_, _, boxId2 = create_primitives(shapeType=p.GEOM_BOX, length=0.023, radius=0.01, rgbaColor=[0, 0, 1, 1], halfExtents = [0.1, 0.1, 0.05])
 
 # Finding the joint (and link) index
 for i in range(p.getNumJoints(robot1_id)):
@@ -143,14 +143,14 @@ else:
 # #### Try forward kinematics
 pos1_0, quat1_0, pos2_0, quat2_0 = sys.compute_ee(x0, link_id)
 # # Put the ball at the end-effector
-# p.resetBasePositionAndOrientation(ballId1, pos1_0, quat1_0)
-# p.resetBasePositionAndOrientation(ballId2, pos2_0, quat2_0)
+p.resetBasePositionAndOrientation(ballId1, pos1_0, quat1_0)
+p.resetBasePositionAndOrientation(ballId2, pos2_0, quat2_0)
 
-# p.resetBasePositionAndOrientation(cylinderId1, ViaPnts1[1], [0,0,0,1])
-# p.resetBasePositionAndOrientation(cylinderId2, ViaPnts2[1], [0,0,0,1])
-#
-# p.resetBasePositionAndOrientation(boxId1, p_target_1, [0,0,0,1])
-# p.resetBasePositionAndOrientation(boxId2, p_target_2, [0,0,0,1])
+p.resetBasePositionAndOrientation(cylinderId1, ViaPnts1[1], [0,0,0,1])
+p.resetBasePositionAndOrientation(cylinderId2, ViaPnts2[1], [0,0,0,1])
+
+p.resetBasePositionAndOrientation(boxId1, p_target_1, [0,0,0,1])
+p.resetBasePositionAndOrientation(boxId2, p_target_2, [0,0,0,1])
 
 # # #### Plot initial trajectory
 # # interpolate the virtual time for visualization of both
