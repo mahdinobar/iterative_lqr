@@ -14,9 +14,9 @@ import pybullet_data
 np.set_printoptions(precision=4, suppress=True)
 # #### Setup pybullet with the urdf
 # configure pybullet and load plane.urdf and quadcopter.urdf
-# physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
-physicsClient = p.connect(p.GUI)  # pybullet with visualisation
-# physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/test.mp4\" --mp4fps=10")  # pybullet with visualisation and recording
+physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
+# physicsClient = p.connect(p.GUI)  # pybullet with visualisation
+# physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/{}/test.mp4\" --mp4fps=10")  # pybullet with visualisation and recording
 # p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-90, cameraTargetPosition=[0,0.,0])
 # p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 # p.setAdditionalSearchPath(pybullet_data.getDataPath())
@@ -26,8 +26,9 @@ robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 
 # parameters ################################################################################
 # Construct the robot system
+demo_name='demo_1'
 warm_start=False
-n_iter = 50
+n_iter = 60
 T = 40 # number of data points
 dt = 0.5
 dof = 7
@@ -35,15 +36,23 @@ dof = 7
 robot1_base_pose=[0, 0, 0]
 robot2_base_pose=[0.6198, -0.7636, 0]
 
-ViaPnts1=np.array([[.65, -.225, .20],[.65, -.225, .145],[.65, -.225, .20]])
-ViaPnts2=np.array([[.65, 0.0, .20],[.65, 0.0, .145],[.65, 0.00, .20]])
+ViaPnts1=np.array([[+0.6526506, -0.19499213, +0.20],
+                   [+0.6526506, -0.19499213, +0.06941289],
+                   [+0.6526506, -0.19499213, +0.20]])
+ViaPnts2=np.array([[+0.51262467, -0.01968636, +0.20],
+                   [+0.51262467, -0.01968636, +0.06941289],
+                   [+0.51262467, -0.01968636, +0.20]])
 # todo check make code robust
 # specify at which time step to pass viapoints
 nbViaPnts=np.shape(ViaPnts1)[0]
 idx=np.array([15, 20, 25],dtype=int)
 
-p_target_1 = np.array([0.60, +0.40, 0.10])
-p_target_2 = np.array([1.20, -0.20, 0.10])
+p_target_1 = np.array([+0.25818314,
+                       +0.2210157,
+                       +0.20])
+p_target_2 = np.array([+0.80018013,
+                       -0.50010305,
+                       +0.20])
 
 # idx= np.linspace(1,1.*T,nbViaPnts+2, dtype='int')[1:-1]
 
@@ -61,19 +70,19 @@ WT_p2=1e4
 Wvia_p1=1e4
 Wvia_p2=1e4
 
-R_dq1=1e0
-R_dq2=1e0
-R_dq2_j2=1e0
+R_dq1=5e0
+R_dq2=5e0
+R_dq2_j2=5e0
 
 R_ds1=1e-10
 R_ds2=1e-10
 
-S_dq1=1e0
-S_dq2=1e0
-S_dq2_j2=1e0
+S_dq1=5e-1
+S_dq2=5e-1
+S_dq2_j2=5e-1
 
-S_ds1=1e0
-S_ds2=1e0
+S_ds1=5e-1
+S_ds2=5e-1
 
 qobs=0
 obs_thresh=2
@@ -103,8 +112,8 @@ _, _, ballId2 = create_primitives(radius=0.03, rgbaColor=[0, 0, 1, 1])
 _, _, cylinderId1 = create_primitives(shapeType=p.GEOM_CYLINDER, length=0.023, radius=0.01, rgbaColor=[1, 0, 0, 1])
 _, _, cylinderId2 = create_primitives(shapeType=p.GEOM_CYLINDER, length=0.023, radius=0.01, rgbaColor=[0, 0, 1, 1])
 
-_, _, boxId1 = create_primitives(shapeType=p.GEOM_BOX, length=0.023, radius=0.01, rgbaColor=[1, 0, 0, 1], halfExtents = [0.1, 0.1, 0.05])
-_, _, boxId2 = create_primitives(shapeType=p.GEOM_BOX, length=0.023, radius=0.01, rgbaColor=[0, 0, 1, 1], halfExtents = [0.1, 0.1, 0.05])
+_, _, boxId1 = create_primitives(shapeType=p.GEOM_BOX, length=0.020, radius=0.01, rgbaColor=[1, 0, 0, 1], halfExtents = [0.1, 0.1, 0.05])
+_, _, boxId2 = create_primitives(shapeType=p.GEOM_BOX, length=0.020, radius=0.01, rgbaColor=[0, 0, 1, 1], halfExtents = [0.1, 0.1, 0.05])
 
 # Finding the joint (and link) index
 for i in range(p.getNumJoints(robot1_id)):
@@ -135,8 +144,8 @@ if warm_start is False:
 
 else:
     # uncomment to warm start traj
-    us=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/us0_tailor.npy")
-    xs=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/xs0_tailor.npy")
+    us=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/{}/us0_tailor.npy".format(demo_name))
+    xs=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/{}/xs0_tailor.npy".format(demo_name))
     x0=xs[0,:]
     sys.set_init_state(x0)
 
@@ -233,15 +242,15 @@ for i in range(dof):
     xs_interp[:, -1]=tt
     xs_interp[:, -2] = tt
 
-np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/xs_interp.npy",xs_interp)
-np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/xs.npy",ilqr_cost.xs)
-np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/us.npy",ilqr_cost.us)
+np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/{}/xs_interp.npy".format(demo_name),xs_interp)
+np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/{}/xs.npy".format(demo_name),ilqr_cost.xs)
+np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/{}/us.npy".format(demo_name),ilqr_cost.us)
 
-# xs_interp=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/xs_interp.npy")
+# xs_interp=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/{}/xs_interp.npy".format(demo_name))
 # # unocmment to record only final traj
 p.disconnect()
-physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/test.mp4\" --mp4fps=10")  # pybullet with visualisation and recording
-p.resetDebugVisualizerCamera(cameraDistance=1.5, cameraYaw=110, cameraPitch=-30, cameraTargetPosition=(ViaPnts1[1]+ViaPnts2[1])/2)
+physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/{}/test.mp4\" --mp4fps=10".format(demo_name))  # pybullet with visualisation and recording
+p.resetDebugVisualizerCamera(cameraDistance=1.5, cameraYaw=120, cameraPitch=-30, cameraTargetPosition=(ViaPnts1[1]+ViaPnts2[1])/2)
 p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.resetSimulation()
@@ -258,14 +267,18 @@ p.loadURDF('plane.urdf')
 _, _, cylinderId1 = create_primitives(shapeType=p.GEOM_CYLINDER, length=0.023, radius=0.01, rgbaColor=[1, 0, 0, 1])
 _, _, cylinderId2 = create_primitives(shapeType=p.GEOM_CYLINDER, length=0.023, radius=0.01, rgbaColor=[0, 0, 1, 1])
 
-_, _, boxId1 = create_primitives(shapeType=p.GEOM_BOX, length=0.023, radius=0.01, rgbaColor=[1, 0, 0, 1], halfExtents = [0.1, 0.1, 0.05])
-_, _, boxId2 = create_primitives(shapeType=p.GEOM_BOX, length=0.023, radius=0.01, rgbaColor=[0, 0, 1, 1], halfExtents = [0.1, 0.1, 0.05])
+box_length=0.10
+_, _, boxId1 = create_primitives(shapeType=p.GEOM_BOX, length=0.020, radius=0.01, rgbaColor=[1, 0, 0, 1], halfExtents = [box_length, box_length, box_length/4])
+_, _, boxId2 = create_primitives(shapeType=p.GEOM_BOX, length=0.020, radius=0.01, rgbaColor=[0, 0, 1, 1], halfExtents = [box_length, box_length, box_length/4])
 
 p.resetBasePositionAndOrientation(cylinderId1, ViaPnts1[1], [0,0,0,1])
 p.resetBasePositionAndOrientation(cylinderId2, ViaPnts2[1], [0,0,0,1])
 
-p.resetBasePositionAndOrientation(boxId1, p_target_1, [0,0,0,1])
-p.resetBasePositionAndOrientation(boxId2, p_target_2, [0,0,0,1])
+box_tol = +0.5*np.array([box_length,
+                       box_length,
+                       0])
+p.resetBasePositionAndOrientation(boxId1, np.array([p_target_1[0],p_target_1[1],0])+box_tol, [0,0,0,1])
+p.resetBasePositionAndOrientation(boxId2, np.array([p_target_2[0],p_target_2[1],0])+box_tol, [0,0,0,1])
 
 # _, _, ballId1_middle = create_primitives(radius=0.05, rgbaColor=[1, 0, 0, 1])
 # p.resetBasePositionAndOrientation(ballId1_middle, ViaPnts1[0], (0, 0, 0, 1))
@@ -279,5 +292,5 @@ print('pos1-p_target_1={}, pos2-p_target_2={}'.format(pos1-p_target_1, pos2-p_ta
 
 if warm_start is False:
     # # uncomment to save warm start traj
-    np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/xs0_tailor.npy",ilqr_cost.xs)
-    np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/us0_tailor.npy",ilqr_cost.us)
+    np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/{}/xs0_tailor.npy".format(demo_name),ilqr_cost.xs)
+    np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/{}/us0_tailor.npy".format(demo_name),ilqr_cost.us)
