@@ -291,10 +291,10 @@ class URDFRobot_spacetime_dual():
         Jl2, Ja2 = p.calculateJacobian(self.robot2_id, ee_id, [0., 0., 0.], x[self.dof:self.dof*2].tolist(), zeros, zeros)
         Jl2, Ja2 = np.array(Jl2), np.array(Ja2)
 
-        ### Important
-        # if baseOrientation is modified for robot2_id then the jacobian should be rotated back to be with respect ot World coordinate system
-        Jl2[[0, 1]] = Jl2[[1, 0]]
-        Jl2[[1]] = -Jl2[[1]]
+        # ### todo Important
+        # # if baseOrientation is modified for robot2_id then the jacobian should be rotated back to be with respect ot World coordinate system
+        # Jl2[[0, 1]] = Jl2[[1, 0]]
+        # Jl2[[1]] = -Jl2[[1]]
 
         self.J2 = np.concatenate([Jl2, Ja2], axis=0)
         return self.J1, self.J2
