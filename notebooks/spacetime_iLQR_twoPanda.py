@@ -27,10 +27,10 @@ robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 # parameters ################################################################################
 # Construct the robot system
 demo_name='demo_1'
-warm_start=False
+warm_start=True
 if warm_start is True:
     warm_start_demo_name='warm_start_1'
-n_iter = 50
+n_iter = 15
 T = 50 # number of data points
 dt = 0.5
 dof = 7
@@ -63,7 +63,7 @@ Q_q1=1e-3
 Q_q2=1e-3
 
 QT_s1=1e0
-QT_s2=1e-1
+QT_s2=1e-2
 
 W = np.zeros((6,6))
 WT_p1=1e4
@@ -84,9 +84,9 @@ S_dq2=1e-1
 S_dq2_j2=1e-1
 
 S_ds1=1e-2
-S_ds2=1e-2
+S_ds2=1e-3
 
-qobs=0
+qobs=1e3
 obs_thresh=2
 model_Q_obs_s=2
 
@@ -146,7 +146,7 @@ if warm_start is False:
 
 else:
     # uncomment to warm start traj
-    us=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/us0_tailor.npy".format(warm_start_emo_name))
+    us=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/us0_tailor.npy".format(warm_start_demo_name))
     xs=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs0_tailor.npy".format(warm_start_demo_name))
     x0=xs[0,:]
     sys.set_init_state(x0)
