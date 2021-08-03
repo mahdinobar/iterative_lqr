@@ -16,7 +16,7 @@ np.set_printoptions(precision=4, suppress=True)
 # configure pybullet and load plane.urdf and quadcopter.urdf
 physicsClient = p.connect(p.DIRECT)  # pybullet only for computations no visualisation, faster
 # physicsClient = p.connect(p.GUI)  # pybullet with visualisation
-# physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/{}/test.mp4\" --mp4fps=10")  # pybullet with visualisation and recording
+# physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/test.mp4\" --mp4fps=10")  # pybullet with visualisation and recording
 # p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=30, cameraPitch=-90, cameraTargetPosition=[0,0.,0])
 # p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 # p.setAdditionalSearchPath(pybullet_data.getDataPath())
@@ -26,8 +26,9 @@ robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 
 # parameters ################################################################################
 # Construct the robot system
-demo_name='warm_start_1'
-warm_start=False
+demo_name='demo_1'
+warm_start_demo_name='warm_start_1'
+warm_start=True
 n_iter = 60
 T = 40 # number of data points
 dt = 0.5
@@ -144,8 +145,8 @@ if warm_start is False:
 
 else:
     # uncomment to warm start traj
-    us=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/{}/us0_tailor.npy".format(demo_name))
-    xs=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/{}/xs0_tailor.npy".format(demo_name))
+    us=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/us0_tailor.npy".format(warm_start_emo_name))
+    xs=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs0_tailor.npy".format(warm_start_demo_name))
     x0=xs[0,:]
     sys.set_init_state(x0)
 
@@ -242,14 +243,29 @@ for i in range(dof):
     xs_interp[:, -1]=tt
     xs_interp[:, -2] = tt
 
-np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/{}/xs_interp.npy".format(demo_name),xs_interp)
-np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/{}/xs.npy".format(demo_name),ilqr_cost.xs)
-np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/{}/us.npy".format(demo_name),ilqr_cost.us)
+np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs_interp.npy".format(demo_name),xs_interp)
+np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs.npy".format(demo_name),ilqr_cost.xs)
+np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/us.npy".format(demo_name),ilqr_cost.us)
 
-# xs_interp=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/{}/xs_interp.npy".format(demo_name))
+
+# xs=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs.npy".format(demo_name))
+# us=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/us.npy".format(demo_name))
+# #### Play traj
+# interpolate the virtual time for visualization of both
+nbVis=1000
+xs_interp=np.zeros((nbVis, xs.shape[1]))
+tt=np.linspace(0,np.max(xs[:,14:]), nbVis)
+for i in range(dof):
+    xs_interp[:,i] = np.interp(tt, xs[:,14],xs[:,i])
+    xs_interp[:,dof+i] = np.interp(tt, xs[:, 15], xs[:, dof+i])
+    xs_interp[:, -1]=tt
+    xs_interp[:, -2] = tt
+np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs_interp_more_steps.npy".format(demo_name),xs_interp)
+
+xs_interp=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs_interp.npy".format(demo_name))
 # # unocmment to record only final traj
 p.disconnect()
-physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/{}/test.mp4\" --mp4fps=10".format(demo_name))  # pybullet with visualisation and recording
+physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/test.mp4\" --mp4fps=10".format(demo_name))  # pybullet with visualisation and recording
 p.resetDebugVisualizerCamera(cameraDistance=1.5, cameraYaw=120, cameraPitch=-30, cameraTargetPosition=(ViaPnts1[1]+ViaPnts2[1])/2)
 p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
@@ -290,7 +306,13 @@ pos1, _, pos2, _ = sys.compute_ee(ilqr_cost.xs[-1], link_id)
 
 print('pos1-p_target_1={}, pos2-p_target_2={}'.format(pos1-p_target_1, pos2-p_target_2))
 
+# test joint limits
+if np.any(np.max(xs[:,:7],axis=0)>joint_limits[1,:]) or np.any(np.min(xs[:,:7],axis=0)<joint_limits[0,:]) or np.any(np.max(xs[:,7:14],axis=0)>joint_limits[1,:]) or np.any(np.min(xs[:,7:14],axis=0)<joint_limits[0,:]):
+    print('---ERROR---joint limits are NOT satisfied!')
+else:
+    print('joint limits are satisfied!')
+
 if warm_start is False:
     # # uncomment to save warm start traj
-    np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/{}/xs0_tailor.npy".format(demo_name),ilqr_cost.xs)
-    np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST/{}/us0_tailor.npy".format(demo_name),ilqr_cost.us)
+    np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs0_tailor.npy".format(demo_name),ilqr_cost.xs)
+    np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/us0_tailor.npy".format(demo_name),ilqr_cost.us)
