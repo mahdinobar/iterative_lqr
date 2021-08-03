@@ -27,10 +27,11 @@ robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 # parameters ################################################################################
 # Construct the robot system
 demo_name='demo_1'
-warm_start_demo_name='warm_start_1'
-warm_start=True
-n_iter = 60
-T = 40 # number of data points
+warm_start=False
+if warm_start is True:
+    warm_start_demo_name='warm_start_1'
+n_iter = 50
+T = 50 # number of data points
 dt = 0.5
 dof = 7
 
@@ -46,7 +47,7 @@ ViaPnts2=np.array([[+0.51262467, -0.01968636, +0.20],
 # todo check make code robust
 # specify at which time step to pass viapoints
 nbViaPnts=np.shape(ViaPnts1)[0]
-idx=np.array([15, 20, 25],dtype=int)
+idx=np.array([20, 25, 30],dtype=int)
 
 p_target_1 = np.array([+0.25818314,
                        +0.2210157,
@@ -71,19 +72,19 @@ WT_p2=1e4
 Wvia_p1=1e4
 Wvia_p2=1e4
 
-R_dq1=5e0
-R_dq2=5e0
-R_dq2_j2=5e0
+R_dq1=1e0
+R_dq2=1e0
+R_dq2_j2=1e0
 
 R_ds1=1e-10
 R_ds2=1e-10
 
-S_dq1=5e-1
-S_dq2=5e-1
-S_dq2_j2=5e-1
+S_dq1=1e-1
+S_dq2=1e-1
+S_dq2_j2=1e-1
 
-S_ds1=5e-1
-S_ds2=5e-1
+S_ds1=1e-2
+S_ds2=1e-2
 
 qobs=0
 obs_thresh=2
@@ -307,7 +308,8 @@ pos1, _, pos2, _ = sys.compute_ee(ilqr_cost.xs[-1], link_id)
 print('pos1-p_target_1={}, pos2-p_target_2={}'.format(pos1-p_target_1, pos2-p_target_2))
 
 # test joint limits
-if np.any(np.max(xs[:,:7],axis=0)>joint_limits[1,:]) or np.any(np.min(xs[:,:7],axis=0)<joint_limits[0,:]) or np.any(np.max(xs[:,7:14],axis=0)>joint_limits[1,:]) or np.any(np.min(xs[:,7:14],axis=0)<joint_limits[0,:]):
+joint_limit_threshold=5/100*(np.max(joint_limits,axis=0)-np.min(joint_limits,axis=0))
+if np.any(np.max(xs[:,:7],axis=0)>joint_limits[1,:]-joint_limit_threshold) or np.any(np.min(xs[:,:7],axis=0)<joint_limits[0,:]+joint_limit_threshold) or np.any(np.max(xs[:,7:14],axis=0)>joint_limits[1,:]-joint_limit_threshold) or np.any(np.min(xs[:,7:14],axis=0)<joint_limits[0,:]+joint_limit_threshold):
     print('---ERROR---joint limits are NOT satisfied!')
 else:
     print('joint limits are satisfied!')
