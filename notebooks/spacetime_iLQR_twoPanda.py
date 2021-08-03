@@ -63,7 +63,7 @@ Q_q1=1e-3
 Q_q2=1e-3
 
 QT_s1=1e0
-QT_s2=1e0
+QT_s2=1e-1
 
 W = np.zeros((6,6))
 WT_p1=1e4
@@ -72,9 +72,9 @@ WT_p2=1e4
 Wvia_p1=1e4
 Wvia_p2=1e4
 
-R_dq1=1e0
-R_dq2=1e0
-R_dq2_j2=1e0
+R_dq1=1e1
+R_dq2=1e1
+R_dq2_j2=1e1
 
 R_ds1=1e-10
 R_ds2=1e-10
