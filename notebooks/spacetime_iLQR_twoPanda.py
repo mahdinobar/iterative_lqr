@@ -26,11 +26,11 @@ robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 
 # parameters ################################################################################
 # Construct the robot system
-demo_name='demo_1'
-warm_start=True
+demo_name='warm_start_2'
+warm_start=False
 if warm_start is True:
     warm_start_demo_name='warm_start_1'
-n_iter = 15
+n_iter = 50
 T = 50 # number of data points
 dt = 0.5
 dof = 7
@@ -40,21 +40,23 @@ robot2_base_pose=[0.6198, -0.7636, 0]
 
 ViaPnts1=np.array([[+0.6526506, -0.19499213, +0.20],
                    [+0.6526506, -0.19499213, +0.06941289],
-                   [+0.6526506, -0.19499213, +0.20]])
+                   [+0.6526506, -0.19499213, +0.20],
+                   [+0.25818314, +0.2210157, +0.30]])
 ViaPnts2=np.array([[+0.51262467, -0.01968636, +0.20],
                    [+0.51262467, -0.01968636, +0.06941289],
-                   [+0.51262467, -0.01968636, +0.20]])
+                   [+0.51262467, -0.01968636, +0.20],
+                   [+0.80018013, -0.50010305, +0.30]])
 # todo check make code robust
 # specify at which time step to pass viapoints
 nbViaPnts=np.shape(ViaPnts1)[0]
-idx=np.array([20, 25, 30],dtype=int)
+idx=np.array([20, 25, 30, T-3],dtype=int)
 
 p_target_1 = np.array([+0.25818314,
                        +0.2210157,
-                       +0.20])
+                       +0.15])
 p_target_2 = np.array([+0.80018013,
                        -0.50010305,
-                       +0.20])
+                       +0.15])
 
 # idx= np.linspace(1,1.*T,nbViaPnts+2, dtype='int')[1:-1]
 
@@ -63,7 +65,7 @@ Q_q1=1e-3
 Q_q2=1e-3
 
 QT_s1=1e0
-QT_s2=1e-2
+QT_s2=1e-1
 
 W = np.zeros((6,6))
 WT_p1=1e4
@@ -84,9 +86,9 @@ S_dq2=1e-1
 S_dq2_j2=1e-1
 
 S_ds1=1e-2
-S_ds2=1e-3
+S_ds2=1e-2
 
-qobs=1e3
+qobs=0
 obs_thresh=2
 model_Q_obs_s=2
 
