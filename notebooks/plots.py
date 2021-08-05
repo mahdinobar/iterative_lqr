@@ -40,13 +40,32 @@ def plot_ds_bar(file_dir):
     ax.bar(x - width / 2, us1, width, label='robot arm 1', color='r')
     ax.bar(x + width / 2, us2, width, label='robot arm 2', color='b')
     ax.legend()
-    ax.set_ylabel('phase')
+    ax.set_ylabel('ds')
     ax.set_xlabel('step')
     fig.tight_layout()
-    plt.show()
     plt.savefig('{}/ds_bar.png'.format(file_dir))
+    plt.show()
+
+def plot_s_vs_step(file_dir):
+    xs=np.load("{}/xs.npy".format(file_dir))
+
+    labels = np.linspace(0,xs.shape[0]-1,xs.shape[0], dtype='int').astype('str')
+    xs1 = xs[:, 14]
+    xs2 = xs[:, 15]
+    x = np.arange(len(labels))  # the label locations
+    width = 0.2  # the width of the bars
+    fig, ax = plt.subplots(figsize=(20, 10))
+    ax.plot(xs1, label='robot arm 1', color='r')
+    ax.plot(xs2, label='robot arm 2', color='b')
+    ax.legend()
+    ax.set_ylabel('s')
+    ax.set_xlabel('step')
+    fig.tight_layout()
+    plt.savefig('{}/s_vs_step.png'.format(file_dir))
+    plt.show()
 
 if __name__ == "__main__":
-    file_dir='/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/tailor_temporal_success_1'
+    file_dir='/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/demo_4'
     # plot_q_vs_s(file_dir)
-    plot_ds_bar(file_dir)
+    # plot_ds_bar(file_dir)
+    plot_s_vs_step(file_dir)
