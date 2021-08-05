@@ -26,11 +26,11 @@ robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 
 # parameters ################################################################################
 # Construct the robot system
-demo_name='demo_4'
-warm_start=True
+demo_name='warm_start_4'
+warm_start=False
 if warm_start is True:
-    warm_start_demo_name='warm_start_3'
-n_iter = 13
+    warm_start_demo_name='warm_start_4'
+n_iter = 40
 T = 50 # number of data points
 dt = 0.5
 dof = 7
@@ -59,39 +59,39 @@ p_target_2 = np.array([+0.80018013,
 # idx= np.linspace(1,1.*T,nbViaPnts+2, dtype='int')[1:-1]
 
 # Set precisions
-Q_q1=1e-3
-Q_q2=1e-3
+Q_q1 = 1e-3
+Q_q2 = 1e-3
 
-QT_s1=1e0
-QT_s2=1e-2
+QT_s1 = 1e0
+QT_s2 = 1e0
 
-W = np.zeros((6,6))
-WT_p1=1e4
-WT_p2=1e4
+W = np.zeros((6, 6))
+WT_p1 = 1e4
+WT_p2 = 1e4
 
-Wvia_p1=1e4
-Wvia_p2=1e4
+Wvia_p1 = 1e4
+Wvia_p2 = 1e4
 
-R_dq1=1e1
-R_dq2=1e1
-R_dq2_j2=1e1
+R_dq1 = 1e0
+R_dq2 = 1e0
+R_dq2_j2 = 1e0
 
-R_ds1=1e-10
-R_ds2=1e-10
+R_ds1 = 1e0
+R_ds2 = 1e0
 
-S_dq1=1e-1
-S_dq2=1e-1
-S_dq2_j2=1e-1
+S_dq1 = 1e-1
+S_dq2 = 1e-1
+S_dq2_j2 = 1e-1
 
-S_ds1=1e-2
-S_ds2=1e-3
+S_ds1 = 1e-1
+S_ds2 = 1e-1
 
-qobs=1e3
-obs_thresh=2
-model_Q_obs_s=2
+qobs = 0
+obs_thresh = 2
+model_Q_obs_s = 2
 
-s1_ref=10
-s2_ref=10
+s1_ref = 10
+s2_ref = 10
 # ############################################################################################
 
 # make the target inside positive xy plane
@@ -126,14 +126,17 @@ sys = URDFRobot_spacetime_dual(dof=dof, robot1_id=robot1_id, robot2_id=robot2_id
 
 if warm_start is False:
     # Set the initial state
-    # comment for warm start
-    # q0_1 = np.array([0., 0., 0., 0., 0., 0., 0.])
-    # q0_2 = np.array([0., 0., 0., 0., 0., 0., 0.])
-    q0_1=np.mean(joint_limits,0)
-    q0_2=np.mean(joint_limits,0)
-    # fix first joint of robot2
-    q0_1[0]=0.5
-    q0_2[0]=1
+    # # comment for warm start
+    # # q0_1 = np.array([0., 0., 0., 0., 0., 0., 0.])
+    # # q0_2 = np.array([0., 0., 0., 0., 0., 0., 0.])
+    # q0_1=np.mean(joint_limits,0)
+    # q0_2=np.mean(joint_limits,0)
+    # # fix first joint of robot2
+    # q0_1[0]=0.5
+    # q0_2[0]=1
+    # fix first joints to start_right_2 and start_left_2 (both near deassembly location)
+    q0_1=np.array([ 0.77334237, -0.05102215, -0.71532796, -2.25619497, -0.086166, 2.26263797, 1.52334609])
+    q0_2 = np.array([ 1.86430536, -0.19274561, -0.51410904, -2.35112557,  0.25145432, 2.76611653, 0.16462086])
     x0 = np.concatenate([q0_1, q0_2, np.zeros(2)])
     sys.set_init_state(x0)
     ### Set initial control output
