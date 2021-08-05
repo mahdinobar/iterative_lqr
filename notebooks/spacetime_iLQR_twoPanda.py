@@ -26,11 +26,11 @@ robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 
 # parameters ################################################################################
 # Construct the robot system
-demo_name='demo_3'
+demo_name='demo_4'
 warm_start=True
 if warm_start is True:
     warm_start_demo_name='warm_start_3'
-n_iter = 25
+n_iter = 13
 T = 50 # number of data points
 dt = 0.5
 dof = 7
