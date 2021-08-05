@@ -59,39 +59,39 @@ p_target_2 = np.array([+0.80018013,
 # idx= np.linspace(1,1.*T,nbViaPnts+2, dtype='int')[1:-1]
 
 # Set precisions
-Q_q1=1e-3
-Q_q2=1e-3
+Q_q1 = 1e-3
+Q_q2 = 1e-3
 
-QT_s1=1e0
-QT_s2=1e-2
+QT_s1 = 1e0
+QT_s2 = 1e-1
 
-W = np.zeros((6,6))
-WT_p1=1e4
-WT_p2=1e4
+W = np.zeros((6, 6))
+WT_p1 = 1e4
+WT_p2 = 1e4
 
-Wvia_p1=1e4
-Wvia_p2=1e4
+Wvia_p1 = 1e4
+Wvia_p2 = 1e4
 
-R_dq1=1e1
-R_dq2=1e1
-R_dq2_j2=1e1
+R_dq1 = 1e1
+R_dq2 = 1e1
+R_dq2_j2 = 1e1
 
-R_ds1=1e-10
-R_ds2=1e-10
+R_ds1 = 1e-10
+R_ds2 = 1e-10
 
-S_dq1=1e-1
-S_dq2=1e-1
-S_dq2_j2=1e-1
+S_dq1 = 1e-1
+S_dq2 = 1e-1
+S_dq2_j2 = 1e-1
 
-S_ds1=1e-2
-S_ds2=1e-3
+S_ds1 = 1e-2
+S_ds2 = 1e-2
 
-qobs=1e3
-obs_thresh=2
-model_Q_obs_s=2
+qobs = 0
+obs_thresh = 2
+model_Q_obs_s = 2
 
-s1_ref=10
-s2_ref=10
+s1_ref = 10
+s2_ref = 10
 # ############################################################################################
 
 # make the target inside positive xy plane
@@ -253,7 +253,7 @@ np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/us.npy"
 # us=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/us.npy".format(demo_name))
 # #### Play traj
 # interpolate the virtual time for visualization of both
-nbVis=1000
+nbVis=3000
 xs_interp=np.zeros((nbVis, xs.shape[1]))
 tt=np.linspace(0,np.max(xs[:,14:]), nbVis)
 for i in range(dof):
