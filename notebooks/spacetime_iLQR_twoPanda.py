@@ -26,11 +26,11 @@ robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 
 # parameters ################################################################################
 # Construct the robot system
-demo_name='warm_start_3'
-warm_start=False
+demo_name='demo_3'
+warm_start=True
 if warm_start is True:
     warm_start_demo_name='warm_start_3'
-n_iter = 40
+n_iter = 25
 T = 50 # number of data points
 dt = 0.5
 dof = 7
@@ -59,39 +59,39 @@ p_target_2 = np.array([+0.80018013,
 # idx= np.linspace(1,1.*T,nbViaPnts+2, dtype='int')[1:-1]
 
 # Set precisions
-Q_q1 = 1e-3
-Q_q2 = 1e-3
+Q_q1=1e-3
+Q_q2=1e-3
 
-QT_s1 = 1e0
-QT_s2 = 1e0
+QT_s1=1e0
+QT_s2=1e-2
 
-W = np.zeros((6, 6))
-WT_p1 = 1e4
-WT_p2 = 1e4
+W = np.zeros((6,6))
+WT_p1=1e4
+WT_p2=1e4
 
-Wvia_p1 = 1e4
-Wvia_p2 = 1e4
+Wvia_p1=1e4
+Wvia_p2=1e4
 
-R_dq1 = 1e0
-R_dq2 = 1e0
-R_dq2_j2 = 1e0
+R_dq1=1e1
+R_dq2=1e1
+R_dq2_j2=1e1
 
-R_ds1 = 1e0
-R_ds2 = 1e0
+R_ds1=1e-10
+R_ds2=1e-10
 
-S_dq1 = 1e-1
-S_dq2 = 1e-1
-S_dq2_j2 = 1e-1
+S_dq1=1e-1
+S_dq2=1e-1
+S_dq2_j2=1e-1
 
-S_ds1 = 1e-1
-S_ds2 = 1e-1
+S_ds1=1e-2
+S_ds2=1e-3
 
-qobs = 0
-obs_thresh = 2
-model_Q_obs_s = 2
+qobs=1e3
+obs_thresh=2
+model_Q_obs_s=2
 
-s1_ref = 10
-s2_ref = 10
+s1_ref=10
+s2_ref=10
 # ############################################################################################
 
 # make the target inside positive xy plane
@@ -248,22 +248,10 @@ np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs_inte
 np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs.npy".format(demo_name),ilqr_cost.xs)
 np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/us.npy".format(demo_name),ilqr_cost.us)
 
-
 # xs=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs.npy".format(demo_name))
 # us=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/us.npy".format(demo_name))
 # #### Play traj
-# interpolate the virtual time for visualization of both
-nbVis=3000
-xs_interp=np.zeros((nbVis, xs.shape[1]))
-tt=np.linspace(0,np.max(xs[:,14:]), nbVis)
-for i in range(dof):
-    xs_interp[:,i] = np.interp(tt, xs[:,14],xs[:,i])
-    xs_interp[:,dof+i] = np.interp(tt, xs[:, 15], xs[:, dof+i])
-    xs_interp[:, -1]=tt
-    xs_interp[:, -2] = tt
-np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs_interp_more_steps.npy".format(demo_name),xs_interp)
-
-xs_interp=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs_interp.npy".format(demo_name))
+# xs_interp=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs_interp.npy".format(demo_name))
 # # unocmment to record only final traj
 p.disconnect()
 physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/test.mp4\" --mp4fps=10".format(demo_name))  # pybullet with visualisation and recording
@@ -313,6 +301,17 @@ if np.any(np.max(xs[:,:7],axis=0)>joint_limits[1,:]-joint_limit_threshold) or np
     print('---ERROR---joint limits are NOT satisfied!')
 else:
     print('joint limits are satisfied!')
+
+# interpolate the virtual time for visualization of both
+nbVis=3000
+xs_interp=np.zeros((nbVis, xs.shape[1]))
+tt=np.linspace(0,np.max(xs[:,14:]), nbVis)
+for i in range(dof):
+    xs_interp[:,i] = np.interp(tt, xs[:,14],xs[:,i])
+    xs_interp[:,dof+i] = np.interp(tt, xs[:, 15], xs[:, dof+i])
+    xs_interp[:, -1]=tt
+    xs_interp[:, -2] = tt
+np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs_interp_{}_steps.npy".format(demo_name,nbVis),xs_interp)
 
 if warm_start is False:
     # # uncomment to save warm start traj
