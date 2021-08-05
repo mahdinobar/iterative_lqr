@@ -26,11 +26,11 @@ robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 
 # parameters ################################################################################
 # Construct the robot system
-demo_name='demo_1'
-warm_start=True
+demo_name='warm_start_3'
+warm_start=False
 if warm_start is True:
-    warm_start_demo_name='warm_start_1'
-n_iter = 15
+    warm_start_demo_name='warm_start_3'
+n_iter = 40
 T = 50 # number of data points
 dt = 0.5
 dof = 7
@@ -39,10 +39,10 @@ robot1_base_pose=[0, 0, 0]
 robot2_base_pose=[0.6198, -0.7636, 0]
 
 ViaPnts1=np.array([[+0.6526506, -0.19499213, +0.20],
-                   [+0.6526506, -0.19499213, +0.06941289],
+                   [+0.6526506, -0.19499213, +0.05541289],
                    [+0.6526506, -0.19499213, +0.20]])
 ViaPnts2=np.array([[+0.51262467, -0.01968636, +0.20],
-                   [+0.51262467, -0.01968636, +0.06941289],
+                   [+0.51262467, -0.01968636, +0.05541289],
                    [+0.51262467, -0.01968636, +0.20]])
 # todo check make code robust
 # specify at which time step to pass viapoints
@@ -63,7 +63,7 @@ Q_q1 = 1e-3
 Q_q2 = 1e-3
 
 QT_s1 = 1e0
-QT_s2 = 1e-1
+QT_s2 = 1e0
 
 W = np.zeros((6, 6))
 WT_p1 = 1e4
@@ -72,19 +72,19 @@ WT_p2 = 1e4
 Wvia_p1 = 1e4
 Wvia_p2 = 1e4
 
-R_dq1 = 1e1
-R_dq2 = 1e1
-R_dq2_j2 = 1e1
+R_dq1 = 1e0
+R_dq2 = 1e0
+R_dq2_j2 = 1e0
 
-R_ds1 = 1e-10
-R_ds2 = 1e-10
+R_ds1 = 1e0
+R_ds2 = 1e0
 
 S_dq1 = 1e-1
 S_dq2 = 1e-1
 S_dq2_j2 = 1e-1
 
-S_ds1 = 1e-2
-S_ds2 = 1e-2
+S_ds1 = 1e-1
+S_ds2 = 1e-1
 
 qobs = 0
 obs_thresh = 2
@@ -179,8 +179,8 @@ Wvia = np.diag(np.concatenate((WT_p1*np.ones(3),WT_p2*np.ones(3))))
 R = np.diag(np.concatenate((R_dq1*np.array([1,1,1,1,1,1,1]),R_dq2**np.array([1]),R_dq2_j2**np.array([1]),R_dq2**np.array([1,1,1,1,1]),[R_ds1,R_ds2])))
 S = np.diag(np.concatenate((S_dq1*np.array([1,1,1,1,1,1,1]),S_dq2**np.array([1]),S_dq2_j2**np.array([1]),S_dq2**np.array([1,1,1,1,1]),[S_ds1,S_ds2])))
 x_ref= np.concatenate((np.mean(joint_limits,0),np.mean(joint_limits,0),[s1_ref,s2_ref]))
-ds1_ref=s1_ref/T
-ds2_ref=s2_ref/T
+ds1_ref=0
+ds2_ref=0
 u_ref = np.concatenate((np.zeros(sys.Dx-2),[ds1_ref,ds2_ref]))
 
 # todo for batch?
