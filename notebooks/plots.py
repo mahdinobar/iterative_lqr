@@ -48,12 +48,8 @@ def plot_ds_bar(file_dir):
 
 def plot_s_vs_step(file_dir):
     xs=np.load("{}/xs.npy".format(file_dir))
-
-    labels = np.linspace(0,xs.shape[0]-1,xs.shape[0], dtype='int').astype('str')
     xs1 = xs[:, 14]
     xs2 = xs[:, 15]
-    x = np.arange(len(labels))  # the label locations
-    width = 0.2  # the width of the bars
     fig, ax = plt.subplots(figsize=(20, 10))
     ax.plot(xs1, label='robot arm 1', color='r')
     ax.plot(xs2, label='robot arm 2', color='b')
