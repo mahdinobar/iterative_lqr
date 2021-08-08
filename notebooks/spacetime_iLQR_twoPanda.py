@@ -26,11 +26,11 @@ robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 
 # parameters ################################################################################
 # Construct the robot system
-demo_name='warm_start_4'
+demo_name='warm_start_5'
 warm_start=False
 if warm_start is True:
-    warm_start_demo_name='warm_start_4'
-n_iter = 40
+    warm_start_demo_name='warm_start_5'
+n_iter = 30
 T = 50 # number of data points
 dt = 0.5
 dof = 7
@@ -59,39 +59,39 @@ p_target_2 = np.array([+0.80018013,
 # idx= np.linspace(1,1.*T,nbViaPnts+2, dtype='int')[1:-1]
 
 # Set precisions
-Q_q1 = 1e-3
-Q_q2 = 1e-3
+Q_q1=1e-3
+Q_q2=1e-3
 
-QT_s1 = 1e0
-QT_s2 = 1e0
+QT_s1=1e0
+QT_s2=1e-2
 
-W = np.zeros((6, 6))
-WT_p1 = 1e4
-WT_p2 = 1e4
+W = np.zeros((6,6))
+WT_p1=1e4
+WT_p2=1e4
 
-Wvia_p1 = 1e4
-Wvia_p2 = 1e4
+Wvia_p1=1e4
+Wvia_p2=1e4
 
-R_dq1 = 1e0
-R_dq2 = 1e0
-R_dq2_j2 = 1e0
+R_dq1=1e1
+R_dq2=1e1
+R_dq2_j2=1e1
 
-R_ds1 = 1e0
-R_ds2 = 1e0
+R_ds1=1e-10
+R_ds2=1e-15
 
-S_dq1 = 1e-1
-S_dq2 = 1e-1
-S_dq2_j2 = 1e-1
+S_dq1=1e-1
+S_dq2=1e-1
+S_dq2_j2=1e-1
 
-S_ds1 = 1e-1
-S_ds2 = 1e-1
+S_ds1=1e0
+S_ds2=1e-1
 
-qobs = 0
-obs_thresh = 2
-model_Q_obs_s = 2
+qobs=0
+obs_thresh=2
+model_Q_obs_s=2
 
-s1_ref = 10
-s2_ref = 10
+s1_ref=10
+s2_ref=10
 # ############################################################################################
 
 # make the target inside positive xy plane
