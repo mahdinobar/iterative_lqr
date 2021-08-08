@@ -26,10 +26,10 @@ robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 
 # parameters ################################################################################
 # Construct the robot system
-demo_name='warm_start_5'
+demo_name='warm_start_4_1'
 warm_start=False
 if warm_start is True:
-    warm_start_demo_name='warm_start_5'
+    warm_start_demo_name='warm_start_4_1'
 n_iter = 30
 T = 50 # number of data points
 dt = 0.5
@@ -55,43 +55,66 @@ p_target_1 = np.array([+0.25818314,
 p_target_2 = np.array([+0.80018013,
                        -0.50010305,
                        +0.20])
+# todo
+if warm_start is False:
+    # todo randomize target spatial location
+    rtmp=0.05  #radius of sphere to randomize the location in it [cm]
+    thetatmp=np.random.rand(1)*(2*np.pi)
+    phitmp=np.random.rand(1)*np.pi
+    xtmp = rtmp * np.cos(thetatmp) * np.sin(phitmp)
+    ytmp = rtmp * np.sin(thetatmp) * np.sin(phitmp)
+    ztmp = rtmp * np.cos(phitmp)
+    p_target_1= p_target_1 + np.array([xtmp.squeeze(), ytmp.squeeze(),ztmp.squeeze()])
+    np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/p_target_1.npy".format(demo_name),p_target_1)
+    thetatmp=np.random.rand(1)*(2*np.pi)
+    phitmp=np.random.rand(1)*np.pi
+    xtmp = rtmp * np.cos(thetatmp) * np.sin(phitmp)
+    ytmp = rtmp * np.sin(thetatmp) * np.sin(phitmp)
+    ztmp = rtmp * np.cos(phitmp)
+    p_target_2= p_target_2 + np.array([xtmp.squeeze(), ytmp.squeeze(),ztmp.squeeze()])
+    np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/p_target_2.npy".format(demo_name),p_target_2)
+else:
+    p_target_1 = np.load(
+        "/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/p_target_1.npy".format(warm_start_demo_name))
+    p_target_2=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/p_target_2.npy".format(warm_start_demo_name))
+
 
 # idx= np.linspace(1,1.*T,nbViaPnts+2, dtype='int')[1:-1]
 
 # Set precisions
-Q_q1=1e-3
-Q_q2=1e-3
+Q_q1 = 1e-3
+Q_q2 = 1e-3
 
-QT_s1=1e0
-QT_s2=1e-2
+QT_s1 = 1e0
+QT_s2 = 1e0
 
-W = np.zeros((6,6))
-WT_p1=1e4
-WT_p2=1e4
+W = np.zeros((6, 6))
+WT_p1 = 1e4
+WT_p2 = 1e4
 
-Wvia_p1=1e4
-Wvia_p2=1e4
+Wvia_p1 = 1e4
+Wvia_p2 = 1e4
 
-R_dq1=1e1
-R_dq2=1e1
-R_dq2_j2=1e1
+R_dq1 = 1e0
+R_dq2 = 1e0
+R_dq2_j2 = 1e0
 
-R_ds1=1e-10
-R_ds2=1e-15
+R_ds1 = 1e0
+R_ds2 = 1e0
 
-S_dq1=1e-1
-S_dq2=1e-1
-S_dq2_j2=1e-1
+S_dq1 = 1e-1
+S_dq2 = 1e-1
+S_dq2_j2 = 1e-1
 
-S_ds1=1e0
-S_ds2=1e-1
+S_ds1 = 1e-1
+S_ds2 = 1e-1
 
-qobs=0
-obs_thresh=2
-model_Q_obs_s=2
+qobs = 0
+obs_thresh = 2
+model_Q_obs_s = 2
 
-s1_ref=10
-s2_ref=10
+s1_ref = 10
+s2_ref = 10
 # ############################################################################################
 
 # make the target inside positive xy plane
@@ -129,16 +152,43 @@ if warm_start is False:
     # # comment for warm start
     # # q0_1 = np.array([0., 0., 0., 0., 0., 0., 0.])
     # # q0_2 = np.array([0., 0., 0., 0., 0., 0., 0.])
-    # q0_1=np.mean(joint_limits,0)
-    # q0_2=np.mean(joint_limits,0)
-    # # fix first joint of robot2
-    # q0_1[0]=0.5
-    # q0_2[0]=1
-    # fix first joints to start_right_2 and start_left_2 (both near deassembly location)
-    q0_1=np.array([ 0.77334237, -0.05102215, -0.71532796, -2.25619497, -0.086166, 2.26263797, 1.52334609])
-    q0_2 = np.array([ 1.86430536, -0.19274561, -0.51410904, -2.35112557,  0.25145432, 2.76611653, 0.16462086])
+    q0_1=np.mean(joint_limits,0)
+    q0_2=np.mean(joint_limits,0)
+    # fix first joint of robot2
+    q0_1[0]=0.5
+    q0_2[0]=1
+
     x0 = np.concatenate([q0_1, q0_2, np.zeros(2)])
     sys.set_init_state(x0)
+
+    # todo randomize initial spatial location
+    init_pos_1 = p.getLinkState(robot1_id, link_id)[0]
+    thetatmp = np.random.rand(1) * (2 * np.pi)
+    phitmp = np.random.rand(1) * np.pi
+    xtmp = rtmp * np.cos(thetatmp) * np.sin(phitmp)
+    ytmp = rtmp * np.sin(thetatmp) * np.sin(phitmp)
+    ztmp = rtmp * np.cos(phitmp)
+    init_pos_1 = init_pos_1 + np.array([xtmp.squeeze(), ytmp.squeeze(), ztmp.squeeze()])
+    np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/init_pos_1.npy".format(demo_name),
+            init_pos_1)
+    x0[:dof] = p.calculateInverseKinematics(robot1_id, link_id, init_pos_1)
+    init_pos_2 = p.getLinkState(robot2_id, link_id)[0]
+    thetatmp = np.random.rand(1) * (2 * np.pi)
+    phitmp = np.random.rand(1) * np.pi
+    xtmp = rtmp * np.cos(thetatmp) * np.sin(phitmp)
+    ytmp = rtmp * np.sin(thetatmp) * np.sin(phitmp)
+    ztmp = rtmp * np.cos(phitmp)
+    init_pos_2 = init_pos_2 + np.array([xtmp.squeeze(), ytmp.squeeze(), ztmp.squeeze()])
+    np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/init_pos_2.npy".format(demo_name),
+            init_pos_2)
+    x0[dof:-2] = p.calculateInverseKinematics(robot2_id, link_id, init_pos_2)
+    np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/x0.npy".format(demo_name),
+            x0)
+    sys.set_init_state(x0)
+
+    # # fix first joints to start_right_2 and start_left_2 (both near deassembly location)
+    # q0_1=np.array([ 0.77334237, -0.05102215, -0.71532796, -2.25619497, -0.086166, 2.26263797, 1.52334609])
+    # q0_2 = np.array([ 1.86430536, -0.19274561, -0.51410904, -2.35112557,  0.25145432, 2.76611653, 0.16462086])
     ### Set initial control output
     # set initial control output to be all zeros
     # add epsilon offset to avoid barrier
