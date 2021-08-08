@@ -30,7 +30,7 @@ demo_name='warm_start_4_1'
 warm_start=False
 if warm_start is True:
     warm_start_demo_name='warm_start_4_1'
-n_iter = 40
+n_iter = 30
 T = 50 # number of data points
 dt = 0.5
 dof = 7
