@@ -1,3 +1,5 @@
+
+
 #!/usr/bin/env python
 # coding: utf-8
 # #### iLQR for kinematic example
@@ -26,11 +28,11 @@ robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 
 # parameters ################################################################################
 # Construct the robot system
-demo_name='warm_start_4_1_b'
-warm_start=False
+demo_name='demo_4_1_b'
+warm_start=True
 if warm_start is True:
     warm_start_demo_name='warm_start_4_1_b'
-n_iter = 40
+n_iter = 15
 T = 50 # number of data points
 dt = 0.5
 dof = 7
@@ -100,8 +102,8 @@ R_dq1 = 1e0
 R_dq2 = 1e0
 R_dq2_j2 = 1e0
 
-R_ds1 = 1e0
-R_ds2 = 1e-3
+R_ds1 = 1e-10
+R_ds2 = 1e-10
 
 S_dq1 = 1e-1
 S_dq2 = 1e-1
@@ -110,7 +112,7 @@ S_dq2_j2 = 1e-1
 S_ds1 = 1e-2
 S_ds2 = 1e-1
 
-qobs = 0
+qobs = 1e3
 obs_thresh = 2
 model_Q_obs_s = 2
 
