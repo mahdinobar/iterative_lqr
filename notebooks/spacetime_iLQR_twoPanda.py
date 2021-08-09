@@ -26,11 +26,11 @@ robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 
 # parameters ################################################################################
 # Construct the robot system
-demo_name='warm_start_4_1'
+demo_name='warm_start_4_1_b'
 warm_start=False
 if warm_start is True:
-    warm_start_demo_name='warm_start_4_1'
-n_iter = 30
+    warm_start_demo_name='warm_start_4_1_b'
+n_iter = 40
 T = 50 # number of data points
 dt = 0.5
 dof = 7
@@ -86,7 +86,7 @@ p_target_2 = np.array([+0.80018013,
 Q_q1 = 1e-3
 Q_q2 = 1e-3
 
-QT_s1 = 1e0
+QT_s1 = 1e-2
 QT_s2 = 1e0
 
 W = np.zeros((6, 6))
@@ -101,13 +101,13 @@ R_dq2 = 1e0
 R_dq2_j2 = 1e0
 
 R_ds1 = 1e0
-R_ds2 = 1e0
+R_ds2 = 1e-3
 
 S_dq1 = 1e-1
 S_dq2 = 1e-1
 S_dq2_j2 = 1e-1
 
-S_ds1 = 1e-1
+S_ds1 = 1e-2
 S_ds2 = 1e-1
 
 qobs = 0
