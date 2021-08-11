@@ -61,7 +61,7 @@ def plot_s_vs_step(file_dir):
     plt.show()
 
 if __name__ == "__main__":
-    file_dir='/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/warm_start_5'
+    file_dir='/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/demo_4_1_b'
     plot_q_vs_s(file_dir)
     plot_ds_bar(file_dir)
     plot_s_vs_step(file_dir)

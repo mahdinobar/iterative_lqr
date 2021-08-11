@@ -28,7 +28,7 @@ robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 
 # parameters ################################################################################
 # Construct the robot system
-demo_name='demo_4_1_b'
+demo_name='demo_4_2_b'
 warm_start=True
 if warm_start is True:
     warm_start_demo_name='warm_start_4_1_b'
@@ -109,7 +109,7 @@ S_dq1 = 1e-1
 S_dq2 = 1e-1
 S_dq2_j2 = 1e-1
 
-S_ds1 = 1e-2
+S_ds1 = 1e-10
 S_ds2 = 1e-1
 
 qobs = 1e3
