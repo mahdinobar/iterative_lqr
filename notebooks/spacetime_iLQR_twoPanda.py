@@ -28,11 +28,11 @@ robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 
 # parameters ################################################################################
 # Construct the robot system
-demo_name='demo_4_2_b'
-warm_start=True
+demo_name='warm_start_5'
+warm_start=False
 if warm_start is True:
-    warm_start_demo_name='warm_start_4_1_b'
-n_iter = 15
+    warm_start_demo_name='warm_start_5'
+n_iter = 30
 T = 50 # number of data points
 dt = 0.5
 dof = 7
@@ -83,12 +83,12 @@ p_target_2 = np.array([+0.80018013,
 
 # idx= np.linspace(1,1.*T,nbViaPnts+2, dtype='int')[1:-1]
 
- #for warmstarts
+# for warmstarts
 # Set precisions
 Q_q1 = 1e-3
 Q_q2 = 1e-3
 
-QT_s1 = 1e-2
+QT_s1 = 1e0
 QT_s2 = 1e0
 
 W = np.zeros((6, 6))
@@ -102,17 +102,17 @@ R_dq1 = 1e0
 R_dq2 = 1e0
 R_dq2_j2 = 1e0
 
-R_ds1 = 1e-10
-R_ds2 = 1e-10
+R_ds1 = 1e0
+R_ds2 = 1e0
 
 S_dq1 = 1e-1
 S_dq2 = 1e-1
 S_dq2_j2 = 1e-1
 
-S_ds1 = 1e-10
+S_ds1 = 1e-1
 S_ds2 = 1e-1
 
-qobs = 1e3
+qobs = 0
 obs_thresh = 2
 model_Q_obs_s = 2
 
@@ -229,7 +229,7 @@ p.resetBasePositionAndOrientation(boxId2, p_target_2, [0,0,0,1])
 # sys.vis_traj(xs_interp)
 
 Q = np.diag(np.concatenate((Q_q1*np.ones(7),Q_q2*np.ones(7),[0, 0])))
-Qf = np.diag(np.concatenate((np.zeros(14),[QT_s1, QT_s2])))
+QT = np.diag(np.concatenate((np.zeros(14),[QT_s1, QT_s2])))
 WT = np.diag(np.concatenate((WT_p1*np.ones(3),WT_p2*np.ones(3))))
 Wvia = np.diag(np.concatenate((WT_p1*np.ones(3),WT_p2*np.ones(3))))
 R = np.diag(np.concatenate((R_dq1*np.array([1,1,1,1,1,1,1]),R_dq2**np.array([1]),R_dq2_j2**np.array([1]),R_dq2**np.array([1,1,1,1,1]),[R_ds1,R_ds2])))
@@ -262,14 +262,14 @@ for i in range(T):
     else:
         runningEECost = CostModelQuadraticTranslation_dual(sys, W=W, ee_id=link_id, p_target_1=p_target_1,
                                                            p_target_2=p_target_2)
-    runningStateCost = CostModelQuadratic(sys, Q=Q, x_ref=x_ref)
+    # runningStateCost = CostModelQuadratic(sys, Q=Q, x_ref=x_ref)
     runningControlCost = CostModelQuadratic(sys, R=R, u_ref=u_ref)
     smoothCost = CostModelQuadratic(sys, S=S)
     # obstAvoidCost = CostModelObstacle_exp4(sys, ee_id=link_id, qobs=qobs, Qobs=Qobs, th=obs_thresh)
     obstAvoidCost = CostModelObstacle_ellipsoids_exp4(sys, ee_id=link_id, qobs=qobs, th=obs_thresh, model_Q_obs_s=model_Q_obs_s)
-    runningCost = CostModelSum(sys, [runningStateCost, runningControlCost, smoothCost, runningEECost, obstAvoidCost])
+    runningCost = CostModelSum(sys, [runningControlCost, smoothCost, runningEECost, obstAvoidCost])
     costs += [runningCost]
-terminalStateCost = CostModelQuadratic(sys, Q=Qf, x_ref=x_ref)
+terminalStateCost = CostModelQuadratic(sys, Q=QT, x_ref=x_ref)
 terminalControlCost = CostModelQuadratic(sys, R=R)
 terminalSmoothCost = CostModelQuadratic(sys, S=S)
 terminalEECost = CostModelQuadraticTranslation_dual(sys, W=WT, ee_id=link_id, p_target_1=p_target_1, p_target_2=p_target_2)
