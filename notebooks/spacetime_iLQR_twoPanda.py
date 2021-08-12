@@ -28,7 +28,7 @@ robot_urdf = "../data/urdf/frankaemika_new/panda_arm.urdf"
 
 # parameters ################################################################################
 # Construct the robot system
-demo_name='demo_4_2_b'
+demo_name='demo_4'
 warm_start=True
 if warm_start is True:
     warm_start_demo_name='warm_start_4_1_b'
@@ -277,37 +277,37 @@ obstAvoidCost = CostModelObstacle_ellipsoids_exp4(sys, ee_id=link_id, qobs=qobs,
 terminalCost = CostModelSum(sys, [terminalStateCost, terminalControlCost, terminalEECost, obstAvoidCost])
 costs += [terminalCost]
 
-# #### Construct ILQR
-ilqr_cost = ILQR(sys, mu)
-ilqr_cost.set_init_state(x0)
-ilqr_cost.set_timestep(T)
-ilqr_cost.set_cost(costs)
-ilqr_cost.set_state(xs, us)  # set initial trajectory
-
-# #### Solve and Plot
-ilqr_cost.solve(n_iter, method='batch', threshold_alpha=1e-5)
-xs_batch, us_batch = ilqr_cost.xs, ilqr_cost.us
-clear_output()
+# # #### Construct ILQR
+# ilqr_cost = ILQR(sys, mu)
+# ilqr_cost.set_init_state(x0)
+# ilqr_cost.set_timestep(T)
+# ilqr_cost.set_cost(costs)
+# ilqr_cost.set_state(xs, us)  # set initial trajectory
+#
+# # #### Solve and Plot
+# ilqr_cost.solve(n_iter, method='batch', threshold_alpha=1e-5)
+# xs_batch, us_batch = ilqr_cost.xs, ilqr_cost.us
+# clear_output()
+#
+# # #### Play traj
+# # interpolate the virtual time for visualization of both
+# nbVis=50
+# xs_interp=np.zeros((nbVis, ilqr_cost.xs.shape[1]))
+# tt=np.linspace(0,np.max(ilqr_cost.xs[:,14:]), nbVis)
+# for i in range(dof):
+#     xs_interp[:,i] = np.interp(tt, ilqr_cost.xs[:,14],ilqr_cost.xs[:,i])
+#     xs_interp[:,dof+i] = np.interp(tt, ilqr_cost.xs[:, 15], ilqr_cost.xs[:, dof+i])
+#     xs_interp[:, -1]=tt
+#     xs_interp[:, -2] = tt
+#
+# np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs_interp.npy".format(demo_name),xs_interp)
+# np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs.npy".format(demo_name),ilqr_cost.xs)
+# np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/us.npy".format(demo_name),ilqr_cost.us)
 
 # #### Play traj
-# interpolate the virtual time for visualization of both
-nbVis=50
-xs_interp=np.zeros((nbVis, ilqr_cost.xs.shape[1]))
-tt=np.linspace(0,np.max(ilqr_cost.xs[:,14:]), nbVis)
-for i in range(dof):
-    xs_interp[:,i] = np.interp(tt, ilqr_cost.xs[:,14],ilqr_cost.xs[:,i])
-    xs_interp[:,dof+i] = np.interp(tt, ilqr_cost.xs[:, 15], ilqr_cost.xs[:, dof+i])
-    xs_interp[:, -1]=tt
-    xs_interp[:, -2] = tt
-
-np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs_interp.npy".format(demo_name),xs_interp)
-np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs.npy".format(demo_name),ilqr_cost.xs)
-np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/us.npy".format(demo_name),ilqr_cost.us)
-
-# xs=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs.npy".format(demo_name))
-# us=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/us.npy".format(demo_name))
-# #### Play traj
-# xs_interp=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs_interp.npy".format(demo_name))
+xs=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs.npy".format(demo_name))
+us=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/us.npy".format(demo_name))
+xs_interp=np.load("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs_interp.npy".format(demo_name))
 # # unocmment to record only final traj
 p.disconnect()
 physicsClient = p.connect(p.GUI, options="--width=1920 --height=1080 --mp4=\"/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/test.mp4\" --mp4fps=10".format(demo_name))  # pybullet with visualisation and recording
@@ -344,12 +344,7 @@ p.resetBasePositionAndOrientation(boxId2, np.array([p_target_2[0],p_target_2[1],
 # _, _, ballId1_middle = create_primitives(radius=0.05, rgbaColor=[1, 0, 0, 1])
 # p.resetBasePositionAndOrientation(ballId1_middle, ViaPnts1[0], (0, 0, 0, 1))
 
-sys.vis_traj(xs_interp, vis_dt=0.1)
-
-# # #### Compute Error
-pos1, _, pos2, _ = sys.compute_ee(ilqr_cost.xs[-1], link_id)
-
-print('pos1-p_target_1={}, pos2-p_target_2={}'.format(pos1-p_target_1, pos2-p_target_2))
+# sys.vis_traj(xs_interp, vis_dt=0.1)
 
 # test joint limits
 joint_limit_threshold=5/100*(np.max(joint_limits,axis=0)-np.min(joint_limits,axis=0))
@@ -359,7 +354,7 @@ else:
     print('joint limits are satisfied!')
 
 # interpolate the virtual time for visualization of both
-nbVis=3000
+nbVis=5000
 xs_interp=np.zeros((nbVis, xs.shape[1]))
 tt=np.linspace(0,np.max(xs[:,14:]), nbVis)
 for i in range(dof):
@@ -368,6 +363,18 @@ for i in range(dof):
     xs_interp[:, -1]=tt
     xs_interp[:, -2] = tt
 np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/xs_interp_{}_steps.npy".format(demo_name,nbVis),xs_interp)
+
+close_gripper_step_rbt_1=np.argmin(abs(xs_interp[:,-2]-xs[25,-2]))
+open_gripper_step_rbt_1=np.argmin(abs(xs_interp[:,-2]-xs[-1,-2]))
+close_gripper_step_rbt_2=np.argmin(abs(xs_interp[:,-1]-xs[25,-1]))
+open_gripper_step_rbt_2=np.argmin(abs(xs_interp[:,-1]-xs[-1,-1]))
+idx_close_open=np.array([close_gripper_step_rbt_1, close_gripper_step_rbt_2, open_gripper_step_rbt_1, open_gripper_step_rbt_2])
+print("idx_close_open=",idx_close_open)
+np.save("/home/mahdi/RLI/codes/iterative_lqr/notebooks/tmp/NIST_demos/{}/idx_close_open_{}_steps.npy".format(demo_name,nbVis),idx_close_open)
+
+# # # #### Compute Error
+# pos1, _, pos2, _ = sys.compute_ee(ilqr_cost.xs[-1], link_id)
+# print('pos1-p_target_1={}, pos2-p_target_2={}'.format(pos1-p_target_1, pos2-p_target_2))
 
 if warm_start is False:
     # # uncomment to save warm start traj
